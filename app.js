@@ -11,7 +11,6 @@ const personHint = document.getElementById('person-hint');
 const grandTotalEl = document.getElementById('grand-total');
 const userBadge = document.getElementById('user-badge');
 const btnAdd = document.getElementById('btn-add');
-const btnAddAdmin = document.getElementById('btn-add-admin');
 const btnExport = document.getElementById('btn-export');
 const fillIndicator = document.getElementById('fill-indicator');
 const fillLabel = document.getElementById('fill-label');
@@ -70,7 +69,6 @@ function updatePersonUi() {
   const hasPerson = Boolean(selected);
 
   btnAdd.disabled = !hasPerson;
-  btnAddAdmin.disabled = !hasPerson;
   btnExport.disabled = !hasPerson;
   tasksLayout.classList.toggle('hidden', !hasPerson);
   fillIndicator.classList.toggle('hidden', !hasPerson);
@@ -230,7 +228,7 @@ function updateTotals() {
   grandTotalEl.textContent = formatHours(DAYS.reduce((s, d) => s + dayTotals[d], 0));
 }
 
-async function addRow(category = '') {
+async function addRow() {
   const week = weekPicker.getWeek();
   const fio = getSelectedPerson();
   if (!fio) return;
@@ -238,7 +236,7 @@ async function addRow(category = '') {
   try {
     const created = await api(`/api/tasks?week=${week}`, {
       method: 'POST',
-      body: JSON.stringify({ ...emptyTask(fio, week), category }),
+      body: JSON.stringify(emptyTask(fio, week)),
     });
     rows.push(created);
     progress = buildProgressFromRows(rows);
@@ -297,7 +295,6 @@ personSelect.addEventListener('change', async () => {
 });
 
 document.getElementById('btn-add').addEventListener('click', () => addRow());
-document.getElementById('btn-add-admin').addEventListener('click', () => addRow(ADMIN_TASK_CATEGORY));
 document.getElementById('btn-export').addEventListener('click', () => {
   exportCsv(rows.filter((row) => !isProjectRow(row)), 'tasks', weekPicker.getWeek());
 });
