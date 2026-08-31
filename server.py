@@ -37,7 +37,7 @@ def configure_app() -> None:
             raise RuntimeError("Set a strong SECRET_KEY when TIMESHEET_ENV=production")
         app.config["SESSION_COOKIE_HTTPONLY"] = True
         app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-        app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "1") == "1"
+        app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "0") == "1"
 
 
 def week_start_for(day: date | None = None) -> str:
@@ -129,12 +129,10 @@ def seed_task_categories(db: sqlite3.Connection):
         "Макетирование",
     ]
     for index, name in enumerate(defaults):
-        exists = db.execute("SELECT id FROM task_categories WHERE name = ?", (name,)).fetchone()
-        if exists is None:
-            db.execute(
-                "INSERT INTO task_categories (name, sort_order) VALUES (?, ?)",
-                (name, index),
-            )
+        db.execute(
+            "INSERT OR IGNORE INTO task_categories (name, sort_order) VALUES (?, ?)",
+            (name, index),
+        )
     db.commit()
 
 
@@ -144,12 +142,10 @@ ADMIN_TASK_CATEGORY = "Административные задачи"
 def seed_project_templates(db: sqlite3.Connection):
     defaults = ["Проектные задачи"]
     for index, name in enumerate(defaults):
-        exists = db.execute("SELECT id FROM project_task_templates WHERE name = ?", (name,)).fetchone()
-        if exists is None:
-            db.execute(
-                "INSERT INTO project_task_templates (name, sort_order) VALUES (?, ?)",
-                (name, index),
-            )
+        db.execute(
+            "INSERT OR IGNORE INTO project_task_templates (name, sort_order) VALUES (?, ?)",
+            (name, index),
+        )
     db.commit()
     db.execute(
         "UPDATE project_task_templates SET active = 0 WHERE name = ?",
@@ -253,9 +249,7 @@ def sync_orphan_task_fio(db: sqlite3.Connection):
 def seed_people(db: sqlite3.Connection):
     demo = ["Иванов И.И.", "Петров П.П.", "Сидорова А.А.", "Козлов Д.В."]
     for name in demo:
-        exists = db.execute("SELECT id FROM people WHERE name = ?", (name,)).fetchone()
-        if exists is None:
-            db.execute("INSERT INTO people (name) VALUES (?)", (name,))
+        db.execute("INSERT OR IGNORE INTO people (name) VALUES (?)", (name,))
     db.commit()
 
 
@@ -321,7 +315,7 @@ def get_public_user_id() -> int:
     row = db.execute("SELECT id FROM users WHERE username = '_public'").fetchone()
     if row is None:
         db.execute(
-            "INSERT INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
             ("_public", generate_password_hash(secrets.token_hex(32)), "public", ""),
         )
         db.commit()
@@ -395,23 +389,20 @@ def init_db():
 
     admin = db.execute("SELECT id FROM users WHERE username = ?", ("admin",)).fetchone()
     if seed_demo_enabled():
-        if admin is None:
-            db.execute(
-                "INSERT INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
-                ("admin", generate_password_hash("admin"), "admin", "Администратор"),
-            )
-        user = db.execute("SELECT id FROM users WHERE username = ?", ("user",)).fetchone()
-        if user is None:
-            db.execute(
-                "INSERT INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
-                ("user", generate_password_hash("user"), "user", ""),
-            )
+        db.execute(
+            "INSERT OR IGNORE INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
+            ("admin", generate_password_hash("admin"), "admin", "Администратор"),
+        )
+        db.execute(
+            "INSERT OR IGNORE INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
+            ("user", generate_password_hash("user"), "user", ""),
+        )
     elif admin is None:
         admin_username = os.environ.get("ADMIN_USERNAME", "admin").strip() or "admin"
         admin_password = os.environ.get("ADMIN_PASSWORD", "").strip()
         if admin_password:
             db.execute(
-                "INSERT INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
+                "INSERT OR IGNORE INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
                 (
                     admin_username,
                     generate_password_hash(admin_password),
