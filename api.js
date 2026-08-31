@@ -6,7 +6,6 @@ const TASK_STATUSES = [
   { value: 'editing', label: 'Редактируется' },
   { value: 'transferred', label: 'Перенесено' },
 ];
-const ADMIN_TASK_CATEGORY = 'Административные задачи';
 
 function unwrapTasksResponse(data) {
   if (Array.isArray(data)) {
@@ -34,11 +33,11 @@ function updateFillIndicator(progress, elements) {
   const norm = progress.hours_norm;
   const percent = progress.hours_percent;
   const project = formatHours(progress.project_hours ?? 0);
-  const admin = formatHours(progress.admin_hours ?? 0);
+  const report = formatHours(progress.report_hours ?? 0);
 
   if (label) {
     label.textContent = progress.project_hours != null
-      ? `Проект ${project} · админ ${admin} · ${filled} / ${norm} ч`
+      ? `Проект ${project} · задачи ${report} · ${filled} / ${norm} ч`
       : `${filled} / ${norm} ч`;
   }
   if (bar) {
@@ -48,7 +47,7 @@ function updateFillIndicator(progress, elements) {
   if (wrap) {
     wrap.setAttribute('aria-valuenow', String(percent));
     wrap.title = progress.project_hours != null
-      ? `Проект ${project} ч + админ ${admin} ч = ${filled} из ${norm} (${percent}%)`
+      ? `Проект ${project} ч + задачи ${report} ч = ${filled} из ${norm} (${percent}%)`
       : `Заполнено ${filled} из ${norm} часов (${percent}%)`;
   }
 }
@@ -171,19 +170,15 @@ function isProjectRow(row) {
   return Boolean(row.is_project);
 }
 
-function isAdminTaskRow(row) {
-  return !isProjectRow(row) && row.category === ADMIN_TASK_CATEGORY;
-}
-
 function normHoursBreakdown(rows) {
   let project = 0;
-  let admin = 0;
+  let report = 0;
   rows.forEach((row) => {
     const hours = rowTotal(row);
     if (isProjectRow(row)) project += hours;
-    else if (isAdminTaskRow(row)) admin += hours;
+    else report += hours;
   });
-  return { project_hours: project, admin_hours: admin, total_hours: project + admin };
+  return { project_hours: project, report_hours: report, total_hours: project + report };
 }
 
 function buildProgressFromRows(rows) {
@@ -191,7 +186,7 @@ function buildProgressFromRows(rows) {
   return {
     ...buildProgress(breakdown.total_hours),
     project_hours: breakdown.project_hours,
-    admin_hours: breakdown.admin_hours,
+    report_hours: breakdown.report_hours,
   };
 }
 function normHoursFromRows(rows) {

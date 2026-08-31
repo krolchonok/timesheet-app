@@ -259,48 +259,37 @@ def seed_people(db: sqlite3.Connection):
     db.commit()
 
 
-def rows_admin_hours(rows: list) -> float:
+def rows_report_hours(rows: list) -> float:
     return sum(
         sum(float(row[day] or 0) for day in DAYS)
         for row in rows
-        if not row["is_project"] and str(row["category"] or "") == ADMIN_TASK_CATEGORY
+        if not row["is_project"]
     )
 
 
 def rows_norm_hours(rows: list) -> float:
-    return rows_project_hours(rows) + rows_admin_hours(rows)
+    return rows_project_hours(rows) + rows_report_hours(rows)
 
 
 def tasks_norm_hours(tasks: list[dict]) -> float:
-    total = 0.0
-    for task in tasks:
-        hours = float(task.get("total", 0) or 0)
-        if task.get("is_project"):
-            total += hours
-        elif str(task.get("category") or "") == ADMIN_TASK_CATEGORY:
-            total += hours
-    return total
+    return sum(float(task.get("total", 0) or 0) for task in tasks)
 
 
 def project_hours_total(tasks: list[dict]) -> float:
     return sum(float(task.get("total", 0) or 0) for task in tasks if task.get("is_project"))
 
 
-def admin_hours_total(tasks: list[dict]) -> float:
-    return sum(
-        float(task.get("total", 0) or 0)
-        for task in tasks
-        if not task.get("is_project") and str(task.get("category") or "") == ADMIN_TASK_CATEGORY
-    )
+def report_hours_total(tasks: list[dict]) -> float:
+    return sum(float(task.get("total", 0) or 0) for task in tasks if not task.get("is_project"))
 
 
 def progress_with_breakdown(tasks: list[dict]) -> dict:
     project_hours = project_hours_total(tasks)
-    admin_hours = admin_hours_total(tasks)
-    total_hours = project_hours + admin_hours
+    report_hours = report_hours_total(tasks)
+    total_hours = project_hours + report_hours
     progress = hours_progress(total_hours)
     progress["project_hours"] = project_hours
-    progress["admin_hours"] = admin_hours
+    progress["report_hours"] = report_hours
     return progress
 
 
@@ -927,7 +916,7 @@ def api_completion():
         ).fetchall()
         meaningful = [task for task in tasks if not task["is_project"] and task_has_content(task)]
         project_hours = rows_project_hours(tasks)
-        admin_hours = rows_admin_hours(tasks)
+        report_hours = rows_report_hours(tasks)
         total_hours = rows_norm_hours(tasks)
         progress = hours_progress(total_hours)
         filled = progress["hours_complete"]
@@ -951,7 +940,7 @@ def api_completion():
                 "task_count": len(meaningful),
                 "filled_tasks": len(meaningful),
                 "project_hours": project_hours,
-                "admin_hours": admin_hours,
+                "report_hours": report_hours,
                 "total_hours": total_hours,
                 "hours_norm": progress["hours_norm"],
                 "hours_percent": progress["hours_percent"],

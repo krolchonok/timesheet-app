@@ -181,9 +181,9 @@ function renderCompletion() {
     nameEl.textContent = person.name;
 
     const meta = person.filled
-      ? `Проект ${formatHours(person.project_hours)} + админ ${formatHours(person.admin_hours)} = ${formatHours(person.total_hours)} / ${person.hours_norm} ч`
-      : (person.project_hours > 0 || person.admin_hours > 0)
-        ? `Проект ${formatHours(person.project_hours)} + админ ${formatHours(person.admin_hours)} = ${formatHours(person.total_hours)} / ${person.hours_norm} ч`
+      ? `Проект ${formatHours(person.project_hours)} + задачи ${formatHours(person.report_hours)} = ${formatHours(person.total_hours)} / ${person.hours_norm} ч`
+      : (person.project_hours > 0 || person.report_hours > 0)
+        ? `Проект ${formatHours(person.project_hours)} + задачи ${formatHours(person.report_hours)} = ${formatHours(person.total_hours)} / ${person.hours_norm} ч`
         : `0 / ${person.hours_norm} ч`;
     metaEl.textContent = visible ? meta : 'Скрыт';
 
@@ -300,8 +300,7 @@ function renderUserSection(group, query) {
   const visibleTasks = group.tasks.filter((row) => matchesSearch(row, group.person.name, query));
   const projectTasks = visibleTasks.filter(isProjectRow);
   const customTasks = visibleTasks.filter((row) => !isProjectRow(row));
-  const reportTasks = customTasks.filter((row) => !isAdminTaskRow(row));
-  const reportHours = reportTasks.reduce((sum, row) => sum + rowTotal(row), 0);
+  const customHours = customTasks.reduce((sum, row) => sum + rowTotal(row), 0);
   const person = group.person;
   const tableTasks = [...projectTasks, ...customTasks];
 
@@ -310,10 +309,10 @@ function renderUserSection(group, query) {
 
   const normParts = [
     `Проект ${formatHours(person.project_hours || 0)} ч`,
-    `админ ${formatHours(person.admin_hours || 0)} ч`,
+    `задачи ${formatHours(person.report_hours || 0)} ч`,
     `${formatHours(person.total_hours || 0)} / ${person.hours_norm || 40} ч`,
   ];
-  const metaParts = [normParts.join(' · '), `${customTasks.length} задач в отчёте`, `${formatHours(reportHours)} ч отчёт`];
+  const metaParts = [normParts.join(' · '), `${customTasks.length} задач`, `${formatHours(customHours)} ч`];
   if (person.filled === false) metaParts.push('не заполнено');
   section.querySelector('.user-section__meta').textContent = metaParts.join(' · ');
 

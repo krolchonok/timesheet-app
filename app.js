@@ -133,10 +133,6 @@ function renderCustomRow(row, index, tbodyEl) {
   tr.querySelector('.row-num').textContent = index + 1;
   applyRowStatusClass(tr, row.status || 'new');
 
-  if (isAdminTaskRow(row)) {
-    tr.classList.add('task-row--admin');
-  }
-
   const categorySelect = tr.querySelector('[data-field="category"]');
   populateCategorySelect(categorySelect, categories, row.category || '');
 

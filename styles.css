@@ -1316,14 +1316,6 @@ body {
   background: var(--surface-muted);
 }
 
-.task-row--admin {
-  background: rgba(59, 130, 246, 0.06);
-}
-
-.task-row--admin .col-category .cell-select {
-  font-weight: 600;
-}
-
 .task-row--project .project-task-name {
   display: block;
   padding: 11px 10px;
