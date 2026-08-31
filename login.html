@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Вход — Timesheet</title>
+  <title>Вход администратора — Timesheet</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="auth-page">
@@ -31,13 +31,13 @@
 
   <main class="auth-side">
     <div class="auth-card">
-      <h2 class="auth-card__title">Вход в систему</h2>
-      <p class="subtitle">Введите логин и пароль</p>
+      <h2 class="auth-card__title">Вход администратора</h2>
+      <p class="subtitle">Расписание доступно без входа. Здесь — только админ-панель.</p>
 
       <form id="login-form" class="auth-form">
         <label>
           <span>Логин</span>
-          <input type="text" id="username" autocomplete="username" placeholder="user или admin" required>
+          <input type="text" id="username" autocomplete="username" placeholder="admin" required>
         </label>
         <label>
           <span>Пароль</span>
@@ -48,9 +48,7 @@
       </form>
 
       <div class="auth-hint">
-        <p><strong>Демо-доступ</strong></p>
-        <p>Пользователь: <code>user</code> / <code>user</code></p>
-        <p>Админ: <code>admin</code> / <code>admin</code></p>
+        <p><a href="/">← К расписанию</a></p>
       </div>
     </div>
   </main>

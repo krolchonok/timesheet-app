@@ -198,9 +198,14 @@ function normHoursFromRows(rows) {
   return normHoursBreakdown(rows).total_hours;
 }
 
-async function requireAuth() {
+async function requireAdminAuth() {
   try {
-    return await api('/api/me');
+    const user = await api('/api/me');
+    if (user.role !== 'admin') {
+      window.location.href = '/';
+      return null;
+    }
+    return user;
   } catch (_) {
     window.location.href = '/login';
     return null;

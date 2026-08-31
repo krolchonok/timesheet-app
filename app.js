@@ -20,7 +20,6 @@ const fillPercent = document.getElementById('fill-percent');
 
 let rows = [];
 let progress = buildProgress(0);
-let currentUser = null;
 let weekPicker = null;
 let people = [];
 let categories = [];
@@ -302,18 +301,7 @@ document.getElementById('btn-add-admin').addEventListener('click', () => addRow(
 document.getElementById('btn-export').addEventListener('click', () => {
   exportCsv(rows.filter((row) => !isProjectRow(row)), 'tasks', weekPicker.getWeek());
 });
-document.getElementById('btn-logout').addEventListener('click', logout);
-
 (async () => {
-  currentUser = await requireAuth();
-  if (!currentUser) return;
-
-  if (currentUser.role === 'admin') {
-    window.location.href = '/admin';
-    return;
-  }
-
-  userBadge.textContent = currentUser.username;
   await loadPeople();
 
   weekPicker = initWeekPicker({

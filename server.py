@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import secrets
 import sqlite3
 from datetime import date, datetime, timedelta, timezone
 from functools import wraps
@@ -326,6 +327,19 @@ def get_active_person(name: str | None):
     ).fetchone()
 
 
+def get_public_user_id() -> int:
+    db = get_db()
+    row = db.execute("SELECT id FROM users WHERE username = '_public'").fetchone()
+    if row is None:
+        db.execute(
+            "INSERT INTO users (username, password_hash, role, default_fio) VALUES (?, ?, ?, ?)",
+            ("_public", generate_password_hash(secrets.token_hex(32)), "public", ""),
+        )
+        db.commit()
+        row = db.execute("SELECT id FROM users WHERE username = '_public'").fetchone()
+    return row["id"]
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -495,7 +509,11 @@ def get_task(task_id: int):
 
 
 def can_access_task(user, task_row) -> bool:
-    return user["role"] == "admin" or task_row["user_id"] == user["id"]
+    if user and user["role"] == "admin":
+        return True
+    if user and user["role"] != "public" and task_row["user_id"] == user["id"]:
+        return True
+    return get_active_person(task_row["fio"]) is not None
 
 
 @app.get("/")
@@ -567,13 +585,12 @@ def api_update_me():
 
 
 @app.get("/api/tasks")
-@login_required
 def api_list_tasks():
     user = current_user()
     week = parse_week_start(request.args.get("week"))
     fio = str(request.args.get("fio", "")).strip()
 
-    if user["role"] == "admin":
+    if user and user["role"] == "admin":
         db = get_db()
         ensure_project_tasks_for_week(db, week, user["id"], fio or None)
         query = """
@@ -595,7 +612,7 @@ def api_list_tasks():
         if person is None:
             return jsonify({"tasks": [], "progress": hours_progress(0)})
         fio = person["name"]
-        ensure_project_tasks(get_db(), fio, week, user["id"])
+        ensure_project_tasks(get_db(), fio, week, get_public_user_id())
         rows = get_db().execute(
             """
             SELECT tasks.*, users.username AS owner_username
@@ -611,10 +628,9 @@ def api_list_tasks():
 
 
 @app.get("/api/weeks")
-@login_required
 def api_list_weeks():
     user = current_user()
-    if user["role"] == "admin":
+    if user and user["role"] == "admin":
         rows = get_db().execute(
             """
             SELECT week_start, COUNT(*) AS task_count
@@ -628,17 +644,14 @@ def api_list_weeks():
             """
             SELECT week_start, COUNT(*) AS task_count
             FROM tasks
-            WHERE user_id = ?
             GROUP BY week_start
             ORDER BY week_start DESC
-            """,
-            (user["id"],),
+            """
         ).fetchall()
     return jsonify([{"week_start": row["week_start"], "task_count": row["task_count"]} for row in rows])
 
 
 @app.post("/api/tasks")
-@login_required
 def api_create_task():
     user = current_user()
     body = request.get_json(silent=True) or {}
@@ -646,14 +659,14 @@ def api_create_task():
     payload["week_start"] = parse_week_start(request.args.get("week") or body.get("week_start"))
     now = utc_now()
 
-    target_user_id = user["id"]
-    if user["role"] == "admin" and request.args.get("user_id"):
+    target_user_id = user["id"] if (user and user["role"] != "public") else get_public_user_id()
+    if user and user["role"] == "admin" and request.args.get("user_id"):
         target_user_id = int(request.args["user_id"])
 
-    if payload["fio"] == "" and user["default_fio"]:
+    if payload["fio"] == "" and user and user["default_fio"]:
         payload["fio"] = user["default_fio"]
 
-    if user["role"] != "admin":
+    if not user or user["role"] != "admin":
         person = get_active_person(payload["fio"])
         if person is None:
             return jsonify({"error": "Выберите ФИО из списка"}), 400
@@ -689,7 +702,6 @@ def api_create_task():
 
 
 @app.put("/api/tasks/<int:task_id>")
-@login_required
 def api_update_task(task_id: int):
     user = current_user()
     row = get_task(task_id)
@@ -699,7 +711,7 @@ def api_update_task(task_id: int):
         return jsonify({"error": "Forbidden"}), 403
 
     payload = request.get_json(silent=True) or {}
-    is_admin = user["role"] == "admin"
+    is_admin = bool(user and user["role"] == "admin")
     parsed = parse_task_payload(payload, admin=is_admin)
     now = utc_now()
 
@@ -720,7 +732,7 @@ def api_update_task(task_id: int):
         parsed["comment"] = str(row["comment"] or "")
         final_task = ""
         status = DEFAULT_TASK_STATUS
-    elif user["role"] != "admin":
+    elif not is_admin:
         person = get_active_person(fio)
         if person is None:
             return jsonify({"error": "Выберите ФИО из списка"}), 400
@@ -762,7 +774,6 @@ def api_update_task(task_id: int):
 
 
 @app.delete("/api/tasks/<int:task_id>")
-@login_required
 def api_delete_task(task_id: int):
     user = current_user()
     row = get_task(task_id)
@@ -770,7 +781,7 @@ def api_delete_task(task_id: int):
         return jsonify({"error": "Not found"}), 404
     if not can_access_task(user, row):
         return jsonify({"error": "Forbidden"}), 403
-    if row["is_project"] and user["role"] != "admin":
+    if row["is_project"] and (not user or user["role"] != "admin"):
         return jsonify({"error": "Проектные задачи нельзя удалять"}), 403
 
     get_db().execute("DELETE FROM tasks WHERE id = ?", (task_id,))
@@ -779,7 +790,6 @@ def api_delete_task(task_id: int):
 
 
 @app.post("/api/tasks/<int:task_id>/copy")
-@login_required
 def api_copy_task(task_id: int):
     user = current_user()
     row = get_task(task_id)
@@ -790,10 +800,10 @@ def api_copy_task(task_id: int):
 
     payload = request.get_json(silent=True) or {}
     target_user_id = row["user_id"]
-    if user["role"] == "admin" and payload.get("user_id"):
+    if user and user["role"] == "admin" and payload.get("user_id"):
         target_user_id = int(payload["user_id"])
-    elif user["role"] != "admin":
-        target_user_id = user["id"]
+    elif not user or user["role"] != "admin":
+        target_user_id = get_public_user_id()
 
     week_start = parse_week_start(payload.get("week_start") or row["week_start"])
 
@@ -860,7 +870,6 @@ def api_list_users():
 
 
 @app.get("/api/people")
-@login_required
 def api_list_people():
     rows = get_db().execute(
         "SELECT id, name FROM people WHERE active = 1 ORDER BY name COLLATE NOCASE"
@@ -1023,7 +1032,6 @@ def api_delete_project_template(template_id: int):
 
 
 @app.get("/api/categories")
-@login_required
 def api_list_categories():
     rows = get_db().execute(
         """

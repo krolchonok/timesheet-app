@@ -55,7 +55,7 @@ run_dev() {
   mkdir -p data
   export TIMESHEET_ENV="${TIMESHEET_ENV:-development}"
   export TIMESHEET_SEED_DEMO="${TIMESHEET_SEED_DEMO:-1}"
-  echo "Dev: http://${HOST}:${PORT}/login  (admin/admin, user/user)"
+  echo "Dev: http://${HOST}:${PORT}  (расписание открыто всем, админ: /login admin/admin)"
   exec python3 server.py
 }
 

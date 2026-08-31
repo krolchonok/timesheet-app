@@ -14,7 +14,14 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
       body: JSON.stringify({ username, password }),
     });
 
-    window.location.href = user.role === 'admin' ? '/admin' : '/';
+    if (user.role !== 'admin') {
+      await api('/api/logout', { method: 'POST' });
+      errorEl.textContent = 'Доступ только для администратора';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    window.location.href = '/admin';
   } catch (error) {
     errorEl.textContent = error.message;
     errorEl.classList.remove('hidden');
@@ -24,6 +31,8 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
 (async () => {
   try {
     const user = await api('/api/me');
-    window.location.href = user.role === 'admin' ? '/admin' : '/';
+    if (user.role === 'admin') {
+      window.location.href = '/admin';
+    }
   } catch (_) {}
 })();

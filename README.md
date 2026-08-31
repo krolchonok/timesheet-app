@@ -14,11 +14,11 @@ chmod +x start
 ./start
 ```
 
-Открыть: http://127.0.0.1:8888/login
+Открыть: http://127.0.0.1:8888 — расписание доступно всем без входа. Админ-панель: `/login` → `/admin`.
 
 Порт — `PORT` в `.env` (по умолчанию **8888**). Проверка: `./start status`
 
-Dev-режим (demo admin/user):
+Dev-режим (demo admin):
 
 ```bash
 ./start dev
