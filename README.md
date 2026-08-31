@@ -27,8 +27,8 @@ Dev-режим (demo admin/user):
 ## Пользователи
 
 ```bash
-.venv/bin/python3 scripts/create_user.py admin 'password' --role admin
-.venv/bin/python3 scripts/create_user.py ivanov 'password' --role user
+python3 scripts/create_user.py admin 'password' --role admin
+python3 scripts/create_user.py ivanov 'password' --role user
 ```
 
 Или `ADMIN_USERNAME` / `ADMIN_PASSWORD` в `.env` до первого запуска.
