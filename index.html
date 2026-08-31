@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Таблица задач — MS Project</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand__mark">TS</div>
+        <div class="brand__text">
+          <span class="brand__name">Timesheet</span>
+          <span class="brand__tag">MS Project</span>
+        </div>
+      </div>
+      <span class="user-badge" id="user-badge"></span>
+    </div>
+
+    <header class="header">
+      <div class="header__text">
+        <h1>Мои задачи</h1>
+        <p class="subtitle">Проектная строка — системная. Задачи добавляете вы; руководитель задаёт итоговое название.</p>
+      </div>
+      <div class="header__actions">
+        <button type="button" class="btn btn--secondary" id="btn-export" disabled>Экспорт CSV</button>
+        <button type="button" class="btn btn--secondary" id="btn-add-admin" disabled>+ Админ. задача</button>
+        <button type="button" class="btn btn--primary" id="btn-add" disabled>+ Задача для отчёта</button>
+        <button type="button" class="btn btn--ghost" id="btn-logout">Выйти</button>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <div class="week-picker">
+        <button type="button" class="week-picker__nav" id="week-prev" aria-label="Предыдущая неделя">←</button>
+        <label class="week-picker__field">
+          <span>Неделя</span>
+          <select id="week-select"></select>
+        </label>
+        <button type="button" class="week-picker__nav" id="week-next" aria-label="Следующая неделя">→</button>
+      </div>
+      <label class="toolbar__field toolbar__field--person">
+        <span>ФИО</span>
+        <select id="person-select">
+          <option value="">— Выберите сотрудника —</option>
+        </select>
+      </label>
+      <div class="fill-indicator hidden" id="fill-indicator" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <span class="fill-indicator__label" id="fill-label">0 / 40 ч</span>
+        <div class="fill-indicator__track">
+          <div class="fill-indicator__bar" id="fill-bar"></div>
+        </div>
+        <span class="fill-indicator__percent" id="fill-percent">0%</span>
+      </div>
+    </div>
+    <p class="toolbar__hint toolbar__hint--below" id="person-hint">Сначала выберите ФИО из списка</p>
+
+    <div class="tasks-layout hidden" id="tasks-layout">
+      <section class="task-section">
+        <div class="task-section__head">
+          <h2>Проектные задачи</h2>
+          <p>Системная строка — только часы (не ваши задачи, для учёта проектного времени)</p>
+        </div>
+        <div class="table-wrap">
+          <table class="task-table">
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th class="col-task">Задача</th>
+                <th class="col-day" data-day="mon">Пн</th>
+                <th class="col-day" data-day="tue">Вт</th>
+                <th class="col-day" data-day="wed">Ср</th>
+                <th class="col-day" data-day="thu">Чт</th>
+                <th class="col-day" data-day="fri">Пт</th>
+                <th class="col-total">Σ</th>
+              </tr>
+            </thead>
+            <tbody id="project-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="task-section">
+        <div class="task-section__head">
+          <h2>Остальные задачи</h2>
+          <p>Админ. задачи — в норму 40 ч. Прочие — только для отчёта руководителю</p>
+        </div>
+        <div class="table-wrap">
+          <table class="task-table" id="task-table">
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th class="col-category">Категория</th>
+                <th class="col-task">Название задачи</th>
+                <th class="col-status">Статус</th>
+                <th class="col-day" data-day="mon">Пн</th>
+                <th class="col-day" data-day="tue">Вт</th>
+                <th class="col-day" data-day="wed">Ср</th>
+                <th class="col-day" data-day="thu">Чт</th>
+                <th class="col-day" data-day="fri">Пт</th>
+                <th class="col-total">Σ</th>
+                <th class="col-comment">Комментарии</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="task-body"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" class="footer-label">Итого по дням</td>
+                <td class="day-total" data-day="mon">0</td>
+                <td class="day-total" data-day="tue">0</td>
+                <td class="day-total" data-day="wed">0</td>
+                <td class="day-total" data-day="thu">0</td>
+                <td class="day-total" data-day="fri">0</td>
+                <td class="grand-total" id="grand-total">0</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <p class="empty-hint" id="empty-hint">Выберите ФИО, чтобы открыть таблицу задач</p>
+  </div>
+
+  <template id="project-row-template">
+    <tr class="task-row task-row--project">
+      <td class="col-num row-num"></td>
+      <td class="col-task">
+        <span class="project-task-name"></span>
+      </td>
+      <td class="col-day" data-day="mon">
+        <input type="number" class="cell-input cell-input--hours" data-field="mon" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="tue">
+        <input type="number" class="cell-input cell-input--hours" data-field="tue" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="wed">
+        <input type="number" class="cell-input cell-input--hours" data-field="wed" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="thu">
+        <input type="number" class="cell-input cell-input--hours" data-field="thu" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="fri">
+        <input type="number" class="cell-input cell-input--hours" data-field="fri" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-total row-total">0</td>
+    </tr>
+  </template>
+
+  <template id="row-template">
+    <tr class="task-row">
+      <td class="col-num row-num"></td>
+      <td class="col-category">
+        <select class="cell-select" data-field="category"></select>
+      </td>
+      <td class="col-task">
+        <input type="text" class="cell-input" data-field="task" placeholder="Название задачи">
+      </td>
+      <td class="col-status">
+        <span class="status-badge"></span>
+      </td>
+      <td class="col-day" data-day="mon">
+        <input type="number" class="cell-input cell-input--hours" data-field="mon" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="tue">
+        <input type="number" class="cell-input cell-input--hours" data-field="tue" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="wed">
+        <input type="number" class="cell-input cell-input--hours" data-field="wed" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="thu">
+        <input type="number" class="cell-input cell-input--hours" data-field="thu" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="fri">
+        <input type="number" class="cell-input cell-input--hours" data-field="fri" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-total row-total">0</td>
+      <td class="col-comment">
+        <input type="text" class="cell-input" data-field="comment" placeholder="Комментарий">
+      </td>
+      <td class="col-actions">
+        <button type="button" class="btn-icon btn-delete" title="Удалить строку" aria-label="Удалить строку">×</button>
+      </td>
+    </tr>
+  </template>
+
+  <script src="week.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

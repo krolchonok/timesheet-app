@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — Timesheet</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+  <aside class="auth-panel">
+    <div class="auth-panel__content">
+      <div class="auth-panel__mark">TS</div>
+      <h1>Сбор задач для MS Project</h1>
+      <p class="subtitle">Планируйте рабочую неделю: ФИО, задачи, часы по дням и комментарии — всё в одной таблице.</p>
+      <div class="auth-panel__features">
+        <div class="auth-panel__feature">
+          <span class="auth-panel__feature-icon">📋</span>
+          <span>Быстрый ввод часов пн–пт</span>
+        </div>
+        <div class="auth-panel__feature">
+          <span class="auth-panel__feature-icon">📤</span>
+          <span>Экспорт в CSV для Excel</span>
+        </div>
+        <div class="auth-panel__feature">
+          <span class="auth-panel__feature-icon">👥</span>
+          <span>Админ видит задачи всех пользователей</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="auth-side">
+    <div class="auth-card">
+      <h2 class="auth-card__title">Вход в систему</h2>
+      <p class="subtitle">Введите логин и пароль</p>
+
+      <form id="login-form" class="auth-form">
+        <label>
+          <span>Логин</span>
+          <input type="text" id="username" autocomplete="username" placeholder="user или admin" required>
+        </label>
+        <label>
+          <span>Пароль</span>
+          <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
+        </label>
+        <p class="form-error hidden" id="login-error"></p>
+        <button type="submit" class="btn btn--primary btn--block">Войти</button>
+      </form>
+
+      <div class="auth-hint">
+        <p><strong>Демо-доступ</strong></p>
+        <p>Пользователь: <code>user</code> / <code>user</code></p>
+        <p>Админ: <code>admin</code> / <code>admin</code></p>
+      </div>
+    </div>
+  </main>
+
+  <script src="api.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>

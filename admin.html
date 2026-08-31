@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ — все задачи</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app app--wide">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand__mark">TS</div>
+        <div class="brand__text">
+          <span class="brand__name">Timesheet</span>
+          <span class="brand__tag">Админ-панель</span>
+        </div>
+      </div>
+      <span class="user-badge" id="user-badge"></span>
+    </div>
+
+    <header class="header">
+      <div class="header__text">
+        <h1 id="admin-title">Просмотр</h1>
+        <p class="subtitle" id="admin-subtitle">40 ч = проектная строка + административные задачи сотрудника. Вы задаёте итоговое наименование (→)</p>
+      </div>
+      <div class="header__actions">
+        <button type="button" class="btn btn--secondary" id="btn-export">Экспорт CSV</button>
+        <button type="button" class="btn btn--ghost" id="btn-logout">Выйти</button>
+      </div>
+    </header>
+
+    <nav class="admin-tabs" aria-label="Режим админ-панели">
+      <button type="button" class="admin-tabs__btn admin-tabs__btn--active" data-mode="view">Просмотр</button>
+      <button type="button" class="admin-tabs__btn" data-mode="manage">Управление</button>
+    </nav>
+
+    <div class="toolbar" id="toolbar-view">
+      <div class="week-picker">
+        <button type="button" class="week-picker__nav" id="week-prev" aria-label="Предыдущая неделя">←</button>
+        <label class="week-picker__field">
+          <span>Неделя</span>
+          <select id="week-select"></select>
+        </label>
+        <button type="button" class="week-picker__nav" id="week-next" aria-label="Следующая неделя">→</button>
+      </div>
+      <label class="toolbar__field">
+        <span>Поиск</span>
+        <input type="text" id="search" placeholder="ФИО, задача...">
+      </label>
+      <span class="toolbar__hint" id="task-count"></span>
+    </div>
+
+    <section class="completion-panel" id="panel-view">
+      <div class="completion-panel__head">
+        <div>
+          <h2>Кто заполнил</h2>
+          <p class="completion-panel__summary" id="completion-summary"></p>
+        </div>
+        <div class="completion-panel__actions">
+          <button type="button" class="btn btn--small btn--secondary" id="btn-show-all">Показать все</button>
+          <button type="button" class="btn btn--small btn--ghost" id="btn-hide-all">Скрыть все</button>
+        </div>
+      </div>
+      <p class="completion-panel__hint">40 ч = проектные часы (строка) + задачи категории «Административные» (создаёт сотрудник). Вы — итоговое название и статус.</p>
+      <div id="completion-list" class="completion-list"></div>
+    </section>
+
+    <section class="manage-panel hidden" id="panel-manage">
+      <h2>Справочники</h2>
+      <p class="manage-panel__hint">Добавление сотрудников и категорий задач</p>
+
+      <div class="manage-block">
+        <h3 class="manage-block__title">Сотрудники</h3>
+        <form id="add-person-form" class="people-form">
+          <input type="text" id="new-person-name" placeholder="Новое ФИО" required>
+          <button type="submit" class="btn btn--primary btn--small">Добавить</button>
+        </form>
+        <div id="manage-people-list" class="manage-people-list"></div>
+      </div>
+
+      <div class="manage-block">
+        <h3 class="manage-block__title">Категории задач</h3>
+        <form id="add-category-form" class="people-form">
+          <input type="text" id="new-category-name" placeholder="Название категории" required>
+          <button type="submit" class="btn btn--secondary btn--small">Добавить</button>
+        </form>
+        <div id="category-list" class="project-templates"></div>
+      </div>
+    </section>
+
+    <div class="users-list-toolbar" id="users-list-toolbar">
+      <button type="button" class="btn btn--small btn--secondary" id="btn-expand-all">Развернуть все</button>
+      <button type="button" class="btn btn--small btn--ghost" id="btn-collapse-all">Свернуть все</button>
+    </div>
+
+    <div id="users-list" class="users-list"></div>
+    <p class="empty-hint hidden" id="empty-hint">Задач пока нет</p>
+  </div>
+
+  <template id="completion-item-template">
+    <div class="completion-item">
+      <span class="completion-item__status"></span>
+      <span class="completion-item__name"></span>
+      <span class="completion-item__meta"></span>
+    </div>
+  </template>
+
+  <template id="manage-person-template">
+    <div class="manage-person">
+      <span class="manage-person__name"></span>
+      <button type="button" class="btn btn--small btn--ghost manage-person__remove">Удалить</button>
+    </div>
+  </template>
+
+  <template id="user-section-template">
+    <section class="user-section">
+      <button type="button" class="user-section__header">
+        <span class="user-section__toggle" aria-hidden="true">▾</span>
+        <span class="user-section__name"></span>
+        <span class="user-section__meta"></span>
+      </button>
+      <div class="user-section__body">
+        <div class="table-wrap">
+          <table class="task-table task-table--admin">
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th class="col-category">Категория</th>
+                <th class="col-task">Название задачи</th>
+                <th class="col-final-task">Итоговое наименование</th>
+                <th class="col-status">Статус</th>
+                <th class="col-day" data-day="mon">Пн</th>
+                <th class="col-day" data-day="tue">Вт</th>
+                <th class="col-day" data-day="wed">Ср</th>
+                <th class="col-day" data-day="thu">Чт</th>
+                <th class="col-day" data-day="fri">Пт</th>
+                <th class="col-total">Σ</th>
+                <th class="col-comment">Комментарии</th>
+              </tr>
+            </thead>
+            <tbody class="user-task-body"></tbody>
+          </table>
+        </div>
+        <p class="user-section__empty hidden">Нет задач у этого сотрудника</p>
+      </div>
+    </section>
+  </template>
+
+  <template id="row-project-view-template">
+    <tr class="task-row task-row--project">
+      <td class="col-num row-num"></td>
+      <td class="col-category cell-text">Проектные</td>
+      <td class="col-task cell-text project-task-name"></td>
+      <td class="col-final-task cell-text">—</td>
+      <td class="col-status cell-text">—</td>
+      <td class="col-day" data-day="mon">
+        <input type="number" class="cell-input cell-input--hours" data-field="mon" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="tue">
+        <input type="number" class="cell-input cell-input--hours" data-field="tue" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="wed">
+        <input type="number" class="cell-input cell-input--hours" data-field="wed" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="thu">
+        <input type="number" class="cell-input cell-input--hours" data-field="thu" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="fri">
+        <input type="number" class="cell-input cell-input--hours" data-field="fri" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-total row-total"></td>
+      <td class="col-comment cell-text">—</td>
+    </tr>
+  </template>
+
+  <template id="row-view-template">
+    <tr class="task-row">
+      <td class="col-num row-num"></td>
+      <td class="col-category cell-text"></td>
+      <td class="col-task cell-text"></td>
+      <td class="col-final-task">
+        <div class="final-task-cell">
+          <input type="text" class="cell-input" data-field="final_task" placeholder="Итоговое наименование">
+          <button type="button" class="btn btn--small btn--secondary btn-transfer" title="Перенести название задачи">→</button>
+        </div>
+      </td>
+      <td class="col-status">
+        <select class="cell-select" data-field="status"></select>
+      </td>
+      <td class="col-day" data-day="mon">
+        <input type="number" class="cell-input cell-input--hours" data-field="mon" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="tue">
+        <input type="number" class="cell-input cell-input--hours" data-field="tue" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="wed">
+        <input type="number" class="cell-input cell-input--hours" data-field="wed" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="thu">
+        <input type="number" class="cell-input cell-input--hours" data-field="thu" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-day" data-day="fri">
+        <input type="number" class="cell-input cell-input--hours" data-field="fri" min="0" max="24" step="0.5" value="0">
+      </td>
+      <td class="col-total row-total"></td>
+      <td class="col-comment cell-text"></td>
+    </tr>
+  </template>
+
+  <script src="week.js"></script>
+  <script src="api.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

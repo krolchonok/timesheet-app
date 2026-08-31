@@ -1,0 +1,15 @@
+[Unit]
+Description=Timesheet web app
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/timesheet
+EnvironmentFile=/opt/timesheet/.env
+ExecStart=/opt/timesheet/start
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Запуск Timesheet одной командой: ./start
+#   ./start       — production (gunicorn)
+#   ./start dev   — dev-сервер Flask
+#   ./start status — проверка порта
+set -euo pipefail
+cd "$(dirname "$0")"
+
+CMD="${1:-run}"
+
+ensure_python() {
+  command -v python3 >/dev/null 2>&1 || {
+    echo "ERROR: python3 не найден" >&2
+    exit 1
+  }
+}
+
+ensure_venv() {
+  if [[ ! -d .venv ]]; then
+    echo "==> Создаю venv..."
+    python3 -m venv .venv
+  fi
+  if [[ ! -f .venv/.deps_ok ]] || [[ requirements.txt -nt .venv/.deps_ok ]]; then
+    echo "==> Ставлю зависимости..."
+    .venv/bin/pip install -q --upgrade pip
+    .venv/bin/pip install -q -r requirements.txt
+    touch .venv/.deps_ok
+  fi
+}
+
+load_env() {
+  if [[ ! -f .env ]]; then
+    cp .env.example .env
+    echo "==> Создан .env — задайте SECRET_KEY для production"
+  fi
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+  export HOST="${HOST:-0.0.0.0}"
+  export PORT="${PORT:-8888}"
+}
+
+show_status() {
+  load_env
+  echo "Ожидается: ${HOST}:${PORT}"
+  if ss -tlnp 2>/dev/null | grep -q ":${PORT} "; then
+    echo "OK — слушает:"
+    ss -tlnp | grep ":${PORT} " || true
+  else
+    echo "НЕ слушает порт ${PORT}"
+    pgrep -af "gunicorn.*server:app" || true
+  fi
+}
+
+run_dev() {
+  ensure_python
+  ensure_venv
+  load_env
+  mkdir -p data
+  export TIMESHEET_ENV="${TIMESHEET_ENV:-development}"
+  export TIMESHEET_SEED_DEMO="${TIMESHEET_SEED_DEMO:-1}"
+  echo "Dev: http://${HOST}:${PORT}/login  (admin/admin, user/user)"
+  exec .venv/bin/python3 server.py
+}
+
+run_prod() {
+  ensure_python
+  ensure_venv
+  load_env
+  mkdir -p data
+  export TIMESHEET_ENV="${TIMESHEET_ENV:-production}"
+  export TIMESHEET_SEED_DEMO="${TIMESHEET_SEED_DEMO:-0}"
+
+  if [[ "${SECRET_KEY:-}" == "" || "${SECRET_KEY}" == "change-me-to-a-long-random-string" ]]; then
+    echo "ERROR: задайте SECRET_KEY в .env" >&2
+    exit 1
+  fi
+
+  echo "Timesheet: http://${HOST}:${PORT}"
+  echo "Проверка:  ss -tlnp | grep ':${PORT} '"
+  exec .venv/bin/gunicorn \
+    --bind "${HOST}:${PORT}" \
+    --workers "${GUNICORN_WORKERS:-2}" \
+    --timeout "${GUNICORN_TIMEOUT:-120}" \
+    --access-logfile - \
+    --error-logfile - \
+    server:app
+}
+
+case "${CMD}" in
+  dev) run_dev ;;
+  status) show_status ;;
+  run|start|"") run_prod ;;
+  *)
+    echo "Usage: ./start [dev|status]" >&2
+    exit 1
+    ;;
+esac
