@@ -2,13 +2,13 @@
 
 Веб-таблица учёта задач и часов с экспортом в MS Project.
 
-**Репозиторий:** https://github.com/krolchonok/timesheet
+**Репозиторий:** https://github.com/krolchonok/timesheet-app
 
 ## Запуск
 
 ```bash
-git clone https://github.com/krolchonok/timesheet.git
-cd timesheet
+git clone https://github.com/krolchonok/timesheet-app.git
+cd timesheet-app
 npm install
 cp .env.example .env   # задайте SECRET_KEY
 npm start
