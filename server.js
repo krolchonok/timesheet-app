@@ -41,7 +41,9 @@ function sendThemedHtml(res, filename) {
   let template = htmlPageCache.get(filename);
   if (template === undefined) {
     template = fs.readFileSync(path.join(BASE_DIR, filename), 'utf8');
-    htmlPageCache.set(filename, template);
+    if (isProduction()) {
+      htmlPageCache.set(filename, template);
+    }
   }
   const html = template.replace(UI_THEME_PLACEHOLDER, uiThemeDefault());
   res.type('html').send(html);
@@ -617,9 +619,7 @@ app.put('/api/tasks/:taskId', (req, res) => {
     const person = getActivePerson(fio);
     if (!person) return res.status(400).json({ error: 'Выберите ФИО из списка' });
     fio = person.name;
-    if (row.is_project) {
-      parsed.task = row.task;
-    } else if (status !== 'transferred') {
+    if (status !== 'transferred') {
       const taskChanged = parsed.task !== String(row.task || '');
       const categoryChanged = parsed.category !== String(row.category || '');
       if (taskChanged || categoryChanged) status = 'editing';
