@@ -7,6 +7,12 @@ const TASK_STATUSES = [
   { value: 'transferred', label: 'Перенесено' },
 ];
 
+function autoGrowTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = `${Math.max(el.scrollHeight, 40)}px`;
+}
+
 function unwrapTasksResponse(data) {
   if (Array.isArray(data)) {
     const total = data.reduce((sum, row) => sum + rowTotal(row), 0);

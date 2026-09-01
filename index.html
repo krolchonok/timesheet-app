@@ -18,6 +18,7 @@
         </div>
       </div>
       <div class="topbar__actions">
+        <button type="button" class="btn btn--ghost btn--small" id="btn-tour">? Инструкция</button>
         <button type="button" class="theme-toggle" id="theme-toggle"></button>
         <span class="user-badge" id="user-badge">Открытый доступ</span>
       </div>
@@ -63,30 +64,6 @@
     <div class="tasks-layout hidden" id="tasks-layout">
       <section class="task-section">
         <div class="task-section__head">
-          <h2>Проектные задачи</h2>
-          <p>Системная строка — только часы (не ваши задачи, для учёта проектного времени)</p>
-        </div>
-        <div class="table-wrap">
-          <table class="task-table">
-            <thead>
-              <tr>
-                <th class="col-num">#</th>
-                <th class="col-task">Задача</th>
-                <th class="col-day" data-day="mon">Пн</th>
-                <th class="col-day" data-day="tue">Вт</th>
-                <th class="col-day" data-day="wed">Ср</th>
-                <th class="col-day" data-day="thu">Чт</th>
-                <th class="col-day" data-day="fri">Пт</th>
-                <th class="col-total">Σ</th>
-              </tr>
-            </thead>
-            <tbody id="project-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="task-section">
-        <div class="task-section__head">
           <h2>Остальные задачи</h2>
           <p>Админ. задачи — в норму 40 ч. Прочие — только для отчёта руководителю</p>
         </div>
@@ -122,6 +99,30 @@
                 <td colspan="2"></td>
               </tr>
             </tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section class="task-section task-section--project" id="project-section">
+        <div class="task-section__head">
+          <h2>Проектные задачи</h2>
+          <p>Системная строка — название только просмотр, часы по дням вносите вы</p>
+        </div>
+        <div class="table-wrap">
+          <table class="task-table task-table--project" data-no-resize="true">
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th class="col-task">Задача</th>
+                <th class="col-day" data-day="mon">Пн</th>
+                <th class="col-day" data-day="tue">Вт</th>
+                <th class="col-day" data-day="wed">Ср</th>
+                <th class="col-day" data-day="thu">Чт</th>
+                <th class="col-day" data-day="fri">Пт</th>
+                <th class="col-total">Σ</th>
+              </tr>
+            </thead>
+            <tbody id="project-body"></tbody>
           </table>
         </div>
       </section>
@@ -162,7 +163,7 @@
         <select class="cell-select" data-field="category"></select>
       </td>
       <td class="col-task">
-        <input type="text" class="cell-input" data-field="task" placeholder="Название задачи">
+        <textarea class="cell-input" data-field="task" rows="1" placeholder="Название задачи"></textarea>
       </td>
       <td class="col-final-task cell-text"></td>
       <td class="col-status">
@@ -185,7 +186,7 @@
       </td>
       <td class="col-total row-total">0</td>
       <td class="col-comment">
-        <input type="text" class="cell-input" data-field="comment" placeholder="Комментарий">
+        <textarea class="cell-input" data-field="comment" rows="1" placeholder="Комментарий"></textarea>
       </td>
       <td class="col-actions">
         <button type="button" class="btn-icon btn-delete" title="Удалить строку" aria-label="Удалить строку">×</button>
@@ -195,6 +196,8 @@
 
   <script src="week.js"></script>
   <script src="api.js"></script>
+  <script src="table-resize.js"></script>
   <script src="app.js"></script>
+  <script src="tour.js"></script>
 </body>
 </html>

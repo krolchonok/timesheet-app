@@ -222,6 +222,10 @@ function renderManagePeople() {
 
 function bindTaskRowInputs(row, tr) {
   tr.querySelectorAll('.cell-input, .cell-select').forEach((input) => {
+    if (input.tagName === 'TEXTAREA') {
+      autoGrowTextarea(input);
+      input.addEventListener('input', () => autoGrowTextarea(input));
+    }
     input.addEventListener('input', () => onCellChange(row.id, input, tr));
     input.addEventListener('change', () => onCellChange(row.id, input, tr));
   });
@@ -241,8 +245,8 @@ function renderProjectRowView(row, index, tbody) {
   });
 
   tr.querySelector('.row-total').textContent = formatHours(rowTotal(row));
-  bindTaskRowInputs(row, tr);
   tbody.appendChild(tr);
+  bindTaskRowInputs(row, tr);
 }
 
 function renderTaskRowView(row, index, tbody) {
@@ -284,6 +288,7 @@ function renderTaskRowView(row, index, tbody) {
       const updated = await api(`/api/tasks/${row.id}/transfer`, { method: 'POST' });
       Object.assign(row, updated);
       finalInput.value = row.final_task || '';
+      autoGrowTextarea(finalInput);
       populateStatusSelect(statusSelect, row.status);
       applyRowStatusClass(tr, row.status);
     } catch (error) {
@@ -291,8 +296,8 @@ function renderTaskRowView(row, index, tbody) {
     }
   });
 
-  bindTaskRowInputs(row, tr);
   tbody.appendChild(tr);
+  bindTaskRowInputs(row, tr);
 }
 
 function renderUserSection(group, query) {

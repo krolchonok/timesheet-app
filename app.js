@@ -101,6 +101,10 @@ function bindRowInputs(row, tr, allowDelete) {
   }
 
   tr.querySelectorAll('.cell-input').forEach((input) => {
+    if (input.tagName === 'TEXTAREA') {
+      autoGrowTextarea(input);
+      input.addEventListener('input', () => autoGrowTextarea(input));
+    }
     input.addEventListener('input', () => onCellChange(row.id, input, tr));
     input.addEventListener('change', () => onCellChange(row.id, input, tr));
   });
@@ -151,8 +155,8 @@ function renderCustomRow(row, index, tbodyEl) {
     }
   });
 
-  bindRowInputs(row, tr, true);
   tbodyEl.appendChild(tr);
+  bindRowInputs(row, tr, true);
 }
 
 function render() {
