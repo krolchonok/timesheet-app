@@ -644,13 +644,14 @@ body {
 }
 
 .cell-text {
-  padding: 10px 12px;
+  padding: 10px 8px;
   font-size: 0.88rem;
   line-height: 1.35;
   color: var(--text);
   white-space: normal;
   word-break: break-word;
   overflow: hidden;
+  text-align: center;
 }
 
 .task-table td.col-task,
@@ -923,8 +924,10 @@ body {
 .task-table td {
   border-bottom: 1px solid var(--border-subtle);
   padding: 0;
-  vertical-align: top;
+  vertical-align: middle;
+  text-align: center;
   overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .task-table thead th {
@@ -943,14 +946,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.task-table thead th.col-fio,
-.task-table thead th.col-task,
-.task-table thead th.col-comment,
-.task-table thead th.col-category,
-.task-table thead th.col-final-task {
-  text-align: left;
 }
 
 .task-table thead th.col-day[data-day="mon"] { background: var(--day-mon); }
@@ -980,8 +975,8 @@ body {
 }
 
 .task-table tfoot .footer-label {
-  text-align: right;
-  padding-right: 14px;
+  text-align: center;
+  padding-right: 8px;
   color: var(--text-muted);
   font-size: 0.82rem;
   text-transform: uppercase;
@@ -1124,23 +1119,17 @@ body.col-resizing * {
   padding: 0 4px !important;
 }
 
-.task-table td.col-num,
-.task-table td.col-day,
-.task-table td.col-total,
-.task-table td.col-status,
-.task-table td.col-actions {
-  vertical-align: middle;
-}
-
 .cell-input {
   display: block;
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
   border: none;
   background: transparent;
-  padding: 11px 10px;
+  padding: 11px 8px;
   font: inherit;
   color: inherit;
+  text-align: center;
   transition: background var(--transition);
 }
 
@@ -1445,9 +1434,10 @@ textarea.cell-input {
 
 .task-row--project .project-task-name {
   display: block;
-  padding: 11px 10px;
+  padding: 11px 8px;
   font-weight: 600;
   color: var(--primary);
+  text-align: center;
 }
 
 .cell-input--readonly {
@@ -1495,14 +1485,22 @@ textarea.cell-input {
 }
 
 .cell-select {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   border: none;
   background: transparent;
   font: inherit;
   color: inherit;
-  padding: 10px 8px;
+  padding: 10px 4px;
   appearance: none;
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  text-align-last: center;
 }
 
 .cell-select:focus {
@@ -1518,8 +1516,10 @@ textarea.cell-input {
 .final-task-cell {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 4px 6px;
+  min-width: 0;
 }
 
 .final-task-cell .cell-input {
@@ -1544,6 +1544,10 @@ textarea.cell-input {
   font-weight: 600;
   background: var(--surface-muted);
   color: var(--text-muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-badge[data-status="editing"] {
