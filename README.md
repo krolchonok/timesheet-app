@@ -9,26 +9,26 @@
 ```bash
 git clone https://github.com/krolchonok/timesheet.git
 cd timesheet
+npm install
 cp .env.example .env   # задайте SECRET_KEY
-chmod +x start
-./start
+npm start
 ```
 
 Открыть: http://127.0.0.1:8888 — расписание доступно всем без входа. Админ-панель: `/login` → `/admin`.
 
-Порт — `PORT` в `.env` (по умолчанию **8888**). Проверка: `./start status`
+Порт — `PORT` в `.env` (по умолчанию **8888**). Проверка: `ss -tlnp | grep :8888`
 
 Dev-режим (demo admin):
 
 ```bash
-./start dev
+npm run dev
 ```
 
 ## Пользователи
 
 ```bash
-python3 scripts/create_user.py admin 'password' --role admin
-python3 scripts/create_user.py ivanov 'password' --role user
+node scripts/create-user.js admin 'password' --role admin
+node scripts/create-user.js ivanov 'password' --role user
 ```
 
 Или `ADMIN_USERNAME` / `ADMIN_PASSWORD` в `.env` до первого запуска.
@@ -41,6 +41,6 @@ sudo ./install.sh
 
 ## Стек
 
-Python 3 + Flask + gunicorn + SQLite.
+Node.js + Express + better-sqlite3.
 
 Подробнее: [INSTRUCTION.md](INSTRUCTION.md) · установка на сервер: [INSTALL.md](INSTALL.md)

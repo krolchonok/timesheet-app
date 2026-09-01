@@ -3,11 +3,11 @@
 ```bash
 git clone https://github.com/krolchonok/timesheet.git
 cd timesheet
+npm install
 cp .env.example .env
 # SECRET_KEY=...  TIMESHEET_SEED_DEMO=0  PORT=8888
 
-chmod +x start
-./start
+npm start
 ```
 
 Фон через systemd:

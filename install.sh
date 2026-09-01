@@ -20,7 +20,8 @@ SERVICE_NAME="timesheet"
 
 echo "==> Устанавливаю Timesheet в ${INSTALL_DIR}"
 
-command -v python3 >/dev/null 2>&1 || { echo "ERROR: python3 не найден в PATH." >&2; exit 1; }
+command -v node >/dev/null 2>&1 || { echo "ERROR: node не найден в PATH." >&2; exit 1; }
+command -v npm >/dev/null 2>&1 || { echo "ERROR: npm не найден в PATH." >&2; exit 1; }
 command -v rsync >/dev/null 2>&1 || { echo "ERROR: rsync не найден. Установите его (apt install rsync / yum install rsync)." >&2; exit 1; }
 command -v systemctl >/dev/null 2>&1 || { echo "ERROR: systemctl не найден — этот установщик рассчитан на systemd." >&2; exit 1; }
 
@@ -33,22 +34,16 @@ echo "==> Копирую файлы проекта"
 mkdir -p "${INSTALL_DIR}"
 rsync -a --delete \
   --exclude '.git' \
-  --exclude '.venv' \
-  --exclude 'venv' \
   --exclude 'node_modules' \
   --exclude 'data' \
   --exclude '.env' \
   "${SOURCE_DIR}/" "${INSTALL_DIR}/"
 mkdir -p "${INSTALL_DIR}/data"
-chmod +x "${INSTALL_DIR}/start"
 
 cd "${INSTALL_DIR}"
 
-echo "==> Создаю venv и ставлю зависимости"
-python3 -m venv .venv
-.venv/bin/pip install -q --upgrade pip
-.venv/bin/pip install -q -r requirements.txt
-touch .venv/.deps_ok
+echo "==> Ставлю npm-зависимости"
+npm install --omit=dev
 
 if [[ ! -f "${INSTALL_DIR}/.env" ]]; then
   echo "==> Создаю .env"
