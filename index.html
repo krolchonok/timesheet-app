@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Таблица задач — MS Project</title>
+  <script>(function(){try{var d="__UI_THEME_DEFAULT__";var t=localStorage.getItem('timesheet-theme')||d;if(t&&t!=='default')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,7 +17,10 @@
           <span class="brand__tag">MS Project</span>
         </div>
       </div>
-      <span class="user-badge" id="user-badge">Открытый доступ</span>
+      <div class="topbar__actions">
+        <button type="button" class="theme-toggle" id="theme-toggle"></button>
+        <span class="user-badge" id="user-badge">Открытый доступ</span>
+      </div>
     </div>
 
     <header class="header">

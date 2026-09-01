@@ -295,6 +295,8 @@ document.getElementById('btn-export').addEventListener('click', () => {
   exportCsv(rows.filter((row) => !isProjectRow(row)), 'tasks', weekPicker.getWeek());
 });
 (async () => {
+  initThemeToggle(document.getElementById('theme-toggle'));
+
   await loadPeople();
 
   weekPicker = initWeekPicker({

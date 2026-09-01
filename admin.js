@@ -515,6 +515,8 @@ document.querySelectorAll('.admin-tabs__btn').forEach((btn) => {
 });
 
 (async () => {
+  initThemeToggle(document.getElementById('theme-toggle'));
+
   const user = await requireAdminAuth();
   if (!user) return;
 

@@ -263,3 +263,43 @@ function debounce(fn, ms = 400) {
     timer = setTimeout(() => fn(...args), ms);
   };
 }
+
+// ── UI theme (default / msproject) ──
+// The active theme is applied as early as possible by an inline bootstrap
+// script in each page's <head> (before styles.css loads) to avoid a flash
+// of the wrong theme. This module only handles reading/writing the
+// preference and wiring up the visible toggle button, if the page has one.
+const THEME_STORAGE_KEY = 'timesheet-theme';
+const THEMES = ['default', 'msproject'];
+
+function getTheme() {
+  return document.documentElement.getAttribute('data-theme') || 'default';
+}
+
+function setTheme(theme) {
+  const value = THEMES.includes(theme) ? theme : 'default';
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, value);
+  } catch (_) {
+    /* localStorage unavailable — theme just won't persist across reloads */
+  }
+  if (value === 'default') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', value);
+  }
+}
+
+function initThemeToggle(button) {
+  if (!button) return;
+  const render = () => {
+    const active = getTheme() === 'msproject';
+    button.textContent = active ? 'Тема: MS Project' : 'Тема: обычная';
+    button.setAttribute('aria-pressed', String(active));
+  };
+  render();
+  button.addEventListener('click', () => {
+    setTheme(getTheme() === 'msproject' ? 'default' : 'msproject');
+    render();
+  });
+}
