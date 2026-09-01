@@ -97,6 +97,7 @@
                 <th class="col-num">#</th>
                 <th class="col-category">Категория</th>
                 <th class="col-task">Название задачи</th>
+                <th class="col-final-task">Итоговое наименование</th>
                 <th class="col-status">Статус</th>
                 <th class="col-day" data-day="mon">Пн</th>
                 <th class="col-day" data-day="tue">Вт</th>
@@ -111,7 +112,7 @@
             <tbody id="task-body"></tbody>
             <tfoot>
               <tr>
-                <td colspan="4" class="footer-label">Итого по дням</td>
+                <td colspan="5" class="footer-label">Итого по дням</td>
                 <td class="day-total" data-day="mon">0</td>
                 <td class="day-total" data-day="tue">0</td>
                 <td class="day-total" data-day="wed">0</td>
@@ -163,6 +164,7 @@
       <td class="col-task">
         <input type="text" class="cell-input" data-field="task" placeholder="Название задачи">
       </td>
+      <td class="col-final-task cell-text"></td>
       <td class="col-status">
         <span class="status-badge"></span>
       </td>

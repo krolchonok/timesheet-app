@@ -140,6 +140,8 @@ function renderCustomRow(row, index, tbodyEl) {
   statusBadge.textContent = statusLabel(row.status || 'new');
   statusBadge.dataset.status = row.status || 'new';
 
+  tr.querySelector('.col-final-task').textContent = row.final_task || '—';
+
   tr.querySelectorAll('.cell-input').forEach((input) => {
     const field = input.dataset.field;
     if (field === 'task' || field === 'comment') {
