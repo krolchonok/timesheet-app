@@ -283,7 +283,7 @@ function bindTaskRowInputs(row, tr) {
 function renderProjectRowView(row, index, tbody) {
   const tr = rowProjectViewTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
-  fillRowNumCell(tr.querySelector('.col-num'), index);
+  fillRowDragAndNum(tr, index);
   tr.querySelector('.project-task-name').textContent = row.task || 'Проектные задачи';
 
   tr.querySelectorAll('.cell-input[data-field]').forEach((input) => {
@@ -349,7 +349,7 @@ function bindAdminRowReorder(tr) {
 function renderTaskRowView(row, index, tbody) {
   const tr = rowViewTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
-  fillRowNumCell(tr.querySelector('.col-num'), index);
+  fillRowDragAndNum(tr, index);
   applyRowStatusClass(tr, row.status || 'new');
 
   const categoryTd = tr.querySelector('.col-category');

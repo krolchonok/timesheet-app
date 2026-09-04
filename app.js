@@ -193,7 +193,7 @@ function bindTaskRowReorder(tr, isProject) {
 function renderProjectRow(row, index, tbodyEl) {
   const tr = projectRowTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
-  fillRowNumCell(tr.querySelector('.col-num'), index);
+  fillRowDragAndNum(tr, index);
 
   const categoryCell = tr.querySelector('.col-category');
   const taskCell = tr.querySelector('.col-task');
@@ -247,7 +247,7 @@ function renderProjectRow(row, index, tbodyEl) {
 function renderCustomRow(row, index, tbodyEl) {
   const tr = rowTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
-  fillRowNumCell(tr.querySelector('.col-num'), index);
+  fillRowDragAndNum(tr, index);
   applyRowStatusClass(tr, row.status || 'new');
 
   const categorySelect = tr.querySelector('[data-field="category"]');
@@ -289,7 +289,7 @@ function render() {
     const tr = document.createElement('tr');
     tr.className = 'task-row--empty';
     const td = document.createElement('td');
-    td.colSpan = 10;
+    td.colSpan = 11;
     td.className = 'task-row--empty-cell';
     td.textContent = 'Проектов пока нет — добавьте кнопкой «+ Задача» (тип «Проектная задача»)';
     tr.appendChild(td);

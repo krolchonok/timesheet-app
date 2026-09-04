@@ -443,23 +443,29 @@ function initThemeToggle(button) {
 }
 
 // ── Row drag reorder (pointer-driven) ──
-function fillRowNumCell(cell, index) {
-  if (!cell) return;
-  cell.classList.add('col-num');
-  cell.replaceChildren();
-  const wrap = document.createElement('span');
-  wrap.className = 'row-num-wrap';
-  const handle = document.createElement('button');
-  handle.type = 'button';
-  handle.className = 'row-drag-handle';
-  handle.title = 'Перетащить';
-  handle.setAttribute('aria-label', 'Перетащить строку');
-  handle.innerHTML = '<span></span><span></span><span></span>';
-  const num = document.createElement('span');
-  num.className = 'row-num';
-  num.textContent = String(index + 1);
-  wrap.append(handle, num);
-  cell.appendChild(wrap);
+function fillRowDragAndNum(tr, index) {
+  if (!tr) return;
+
+  const dragCell = tr.querySelector('.col-drag');
+  if (dragCell) {
+    dragCell.replaceChildren();
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'row-drag-handle';
+    handle.title = 'Перетащить';
+    handle.setAttribute('aria-label', 'Перетащить строку');
+    handle.innerHTML = '<span></span><span></span>';
+    dragCell.appendChild(handle);
+  }
+
+  const numCell = tr.querySelector('.col-num');
+  if (numCell) {
+    numCell.replaceChildren();
+    const num = document.createElement('span');
+    num.className = 'row-num';
+    num.textContent = String(index + 1);
+    numCell.appendChild(num);
+  }
 }
 
 function renumberTaskRows(tbody) {
