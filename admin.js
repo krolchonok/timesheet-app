@@ -373,6 +373,31 @@ function renderTaskRowView(row, index, tbody) {
   bindTaskRowInputs(row, tr);
 }
 
+function sumPersonDayTotals(tasks) {
+  const dayTotals = Object.fromEntries(DAYS.map((d) => [d, 0]));
+  tasks.forEach((row) => {
+    DAYS.forEach((day) => {
+      dayTotals[day] += parseHours(row[day]);
+    });
+  });
+  return dayTotals;
+}
+
+function applyPersonSectionTotals(section, tasks) {
+  if (!section) return;
+  const dayTotals = sumPersonDayTotals(tasks);
+  const table = section.querySelector('.task-table');
+  if (!table) return;
+  DAYS.forEach((day) => {
+    const el = table.querySelector(`tfoot .day-total[data-day="${day}"]`);
+    if (el) el.textContent = formatHours(dayTotals[day]);
+  });
+  const grand = table.querySelector('tfoot .user-section__grand-total');
+  if (grand) {
+    grand.textContent = formatHours(DAYS.reduce((sum, day) => sum + dayTotals[day], 0));
+  }
+}
+
 function renderUserSection(group, query) {
   const section = userSectionTemplate.content.cloneNode(true).querySelector('.user-section');
   const visibleTasks = group.tasks.filter((row) => matchesSearch(row, group.person.name, query));
@@ -383,6 +408,7 @@ function renderUserSection(group, query) {
   const tableTasks = [...projectTasks, ...customTasks];
 
   section.dataset.personId = person.id || person.name;
+  section.dataset.personName = person.name;
   section.querySelector('.user-section__name').textContent = person.name;
 
   const normParts = [
@@ -417,6 +443,7 @@ function renderUserSection(group, query) {
       renderTaskRowView(row, index, tbody);
       index += 1;
     });
+    applyPersonSectionTotals(section, tableTasks);
   }
 
   const headerEl = section.querySelector('.user-section__header');
@@ -524,6 +551,11 @@ function onCellChange(taskId, input, tr) {
     row[field] = parseHours(input.value);
     input.value = formatHours(row[field]);
     tr.querySelector('.row-total').textContent = formatHours(rowTotal(row));
+    const section = tr.closest('.user-section');
+    if (section) {
+      const personTasks = rows.filter((item) => item.fio === row.fio);
+      applyPersonSectionTotals(section, personTasks);
+    }
   } else {
     row[field] = input.value;
   }

@@ -147,7 +147,8 @@
   border: 2px solid var(--v2-frame);
   border-radius: 8px;
   box-shadow: none;
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -399,6 +400,173 @@
 
 .app--v2-admin .modal {
   border: 2px solid var(--v2-frame);
+}
+
+/* ── Schedule Excel import ── */
+
+.schedule-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.55);
+  pointer-events: none;
+}
+
+.schedule-drop-overlay.hidden {
+  display: none;
+}
+
+.schedule-drop-overlay__card {
+  max-width: 420px;
+  padding: 28px 32px;
+  border: 2px dashed #fff;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+
+.schedule-import-overlay {
+  z-index: 70;
+}
+
+.schedule-import-modal {
+  max-width: 720px;
+  max-height: min(86vh, 820px);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px 14px;
+  border: 2px solid var(--v2-frame);
+}
+
+.schedule-import-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.schedule-import-modal__head .modal__title {
+  margin-bottom: 4px;
+}
+
+.schedule-import-modal__meta,
+.schedule-import-modal__hint {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+
+.schedule-import-modal__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.schedule-import-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.schedule-import-list {
+  flex: 1;
+  min-height: 120px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px;
+  margin-bottom: 12px;
+}
+
+.schedule-import-item {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--v2-grid, var(--border));
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.schedule-import-item:hover {
+  background: var(--surface-muted);
+}
+
+.schedule-import-item__check {
+  margin-top: 3px;
+}
+
+.schedule-import-item__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.schedule-import-item__name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.schedule-import-item__badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.schedule-import-item__total {
+  margin-left: auto;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.schedule-import-item__sub,
+.schedule-import-item__days {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.schedule-import-item__days {
+  margin-top: 2px;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+.schedule-import-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 0;
 }
 
 @media (max-width: 900px) {

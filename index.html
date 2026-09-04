@@ -81,6 +81,7 @@
           <button type="button" class="btn btn--secondary btn--small more-menu__toggle" id="more-menu-toggle" aria-expanded="false" aria-haspopup="true">Ещё</button>
           <div class="more-menu__panel hidden" id="more-menu-panel" role="menu">
             <button type="button" class="more-menu__item" id="btn-export" role="menuitem" disabled>Экспорт CSV</button>
+            <button type="button" class="more-menu__item" id="btn-import-schedule" role="menuitem" disabled>Импорт Excel</button>
             <button type="button" class="more-menu__item" id="btn-add-downtime" role="menuitem" disabled>+ Простой</button>
             <button type="button" class="more-menu__item" id="btn-tour" role="menuitem">Инструкция</button>
             <button type="button" class="more-menu__item theme-toggle" id="theme-toggle" role="menuitem"></button>
@@ -254,9 +255,13 @@
     </tr>
   </template>
 
+  <input type="file" id="schedule-file-input" class="hidden" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+
   <script src="week.js"></script>
   <script src="api.js"></script>
+  <script src="/vendor/xlsx.full.min.js"></script>
   <script src="table-resize.js"></script>
+  <script src="schedule-import.js"></script>
   <script src="app.js"></script>
   <script src="tour.js"></script>
   <script src="new.js"></script>

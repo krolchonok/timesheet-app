@@ -80,6 +80,8 @@ function updatePersonUi() {
   btnExport.disabled = !hasPerson;
   if (btnAddDowntime) btnAddDowntime.disabled = !hasPerson;
   if (btnVacation) btnVacation.disabled = !hasPerson;
+  const btnImportSchedule = document.getElementById('btn-import-schedule');
+  if (btnImportSchedule) btnImportSchedule.disabled = !hasPerson;
   if (!hasPerson) {
     vacationPopover?.classList.add('hidden');
     taskPopover?.classList.add('hidden');
@@ -442,6 +444,59 @@ document.addEventListener('click', () => {
   vacationPopover?.classList.add('hidden');
   taskPopover?.classList.add('hidden');
 });
+
+async function importScheduleFile(file) {
+  if (!getSelectedPerson()) {
+    alert('Сначала выберите ФИО');
+    return;
+  }
+  if (!weekPicker) {
+    alert('Неделя ещё не загружена');
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = await ScheduleImport.parseFile(file);
+  } catch (error) {
+    alert(`Не удалось прочитать файл: ${error.message}`);
+    return;
+  }
+  if (parsed.error) {
+    alert(parsed.error);
+    return;
+  }
+
+  ScheduleImport.openImportModal(parsed, async (selected) => {
+    const week = weekPicker.getWeek();
+    const fio = getSelectedPerson();
+    const created = [];
+    for (const item of selected) {
+      const payload = {
+        ...emptyTask(fio, week),
+        task: item.task,
+        category: item.category,
+        is_project: item.is_project,
+        mon: item.mon,
+        tue: item.tue,
+        wed: item.wed,
+        thu: item.thu,
+        fri: item.fri,
+        comment: item.note || '',
+      };
+      const row = await api(`/api/tasks?week=${week}`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      created.push(row);
+    }
+    rows.push(...created);
+    progress = buildProgressFromRows(rows);
+    render();
+    weekPicker.refreshWeeksList();
+  });
+}
+
 (async () => {
   initThemeToggle(document.getElementById('theme-toggle'));
 
@@ -454,6 +509,19 @@ document.addEventListener('click', () => {
     nextBtn: document.getElementById('week-next'),
     onChange: loadTasks,
   });
+
+  if (typeof ScheduleImport !== 'undefined') {
+    const fileInput = document.getElementById('schedule-file-input');
+    ScheduleImport.bindFileButton(
+      document.getElementById('btn-import-schedule'),
+      fileInput,
+      importScheduleFile
+    );
+    ScheduleImport.bindDropImport({
+      enabled: () => Boolean(getSelectedPerson()),
+      onFile: importScheduleFile,
+    });
+  }
 
   if (getSelectedPerson()) {
     await loadTasks();

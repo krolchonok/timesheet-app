@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
 :root {
   --bg: #eef0f3;
@@ -30,7 +30,7 @@
   --radius: 10px;
   --radius-sm: 7px;
   --font: "DM Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-mono: "DM Sans", system-ui, sans-serif;
   --transition: 0.18s ease;
 
   --col-num: 3%;
@@ -812,7 +812,8 @@ body {
 
 .cell-text--hours {
   text-align: center;
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
 }
 
 .cell-text {
@@ -835,7 +836,8 @@ body {
 
 .task-table--admin .cell-text.col-day {
   text-align: center;
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
 }
 
@@ -1184,7 +1186,8 @@ body {
 
 .task-table tfoot .day-total,
 .task-table tfoot .grand-total {
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 0.9rem;
 }
 
@@ -1340,7 +1343,8 @@ body.col-resizing * {
 .row-num {
   text-align: center;
   color: var(--text-faint);
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   padding: 0 4px !important;
 }
@@ -1378,8 +1382,9 @@ textarea.cell-input {
 .cell-input--hours {
   text-align: center;
   padding: 11px 4px;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
   font-weight: 500;
   -moz-appearance: textfield;
 }
@@ -1392,9 +1397,10 @@ textarea.cell-input {
 
 .row-total {
   text-align: center;
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   color: var(--accent);
 }
 
@@ -1595,7 +1601,8 @@ textarea.cell-input {
 }
 
 .fill-indicator__label {
-  font-family: var(--font-mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: 0.82rem;
   font-weight: 600;
   white-space: nowrap;
@@ -1934,7 +1941,7 @@ textarea.cell-input {
   --radius: 3px;
   --radius-sm: 2px;
   --font: "Segoe UI", Tahoma, Arial, sans-serif;
-  --font-mono: Consolas, ui-monospace, monospace;
+  --font-mono: "Segoe UI", Tahoma, Arial, sans-serif;
 }
 
 [data-theme="msproject"] .table-wrap {

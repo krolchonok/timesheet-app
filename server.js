@@ -867,10 +867,15 @@ app.delete('/api/categories/:categoryId', adminRequired, (req, res) => {
 
 // static assets: explicit allowlist only — never blanket-serve BASE_DIR
 // (that would also expose .env, data/timesheet.db, server.js, node_modules, etc.)
-const STATIC_FILES = ['styles.css', 'new.css', 'app.js', 'admin.js', 'login.js', 'api.js', 'week.js', 'table-resize.js', 'tour.js', 'new.js'];
+const STATIC_FILES = ['styles.css', 'new.css', 'app.js', 'admin.js', 'login.js', 'api.js', 'week.js', 'table-resize.js', 'tour.js', 'new.js', 'schedule-import.js'];
 for (const file of STATIC_FILES) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(BASE_DIR, file)));
 }
+
+app.get('/vendor/xlsx.full.min.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(BASE_DIR, 'node_modules', 'xlsx', 'dist', 'xlsx.full.min.js'));
+});
 
 if (require.main === module) {
   const host = process.env.HOST || '0.0.0.0';

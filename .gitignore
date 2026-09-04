@@ -7,3 +7,7 @@ data/*.db
 *.log
 node_modules/
 .DS_Store
+*.xlsx
+*.xls
+data/*.db-shm
+data/*.db-wal
