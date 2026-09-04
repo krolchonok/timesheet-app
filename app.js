@@ -17,8 +17,6 @@ const btnVacation = document.getElementById('btn-vacation');
 const vacationPopover = document.getElementById('vacation-popover');
 const taskPopover = document.getElementById('task-popover');
 const taskTypeSelect = document.getElementById('task-type-select');
-const taskNameInput = document.getElementById('task-name-input');
-const taskNameTemplatesList = document.getElementById('task-name-templates-list');
 
 const ADMIN_TASK_CATEGORY = 'Административные задачи';
 const VACATION_CATEGORY = 'Отпуск';
@@ -305,7 +303,7 @@ function updateTotals() {
   applyDayTotals(document.getElementById('summary-section'), overallTotals, document.getElementById('overall-grand-total'));
 }
 
-async function addQuickTask(overrides, focusTaskField = false) {
+async function addQuickTask(overrides, focusNameField = false) {
   const week = weekPicker.getWeek();
   const fio = getSelectedPerson();
   if (!fio) return;
@@ -320,9 +318,11 @@ async function addQuickTask(overrides, focusTaskField = false) {
     progress = buildProgressFromRows(rows);
     render();
     weekPicker.refreshWeeksList();
-    if (focusTaskField) {
-      const lastTaskInput = tbody.querySelector('tr:last-child .cell-input[data-field="task"]');
-      if (lastTaskInput) lastTaskInput.focus();
+    if (focusNameField) {
+      const container = isProjectRow(created) ? projectBody : tbody;
+      const field = isProjectRow(created) ? 'category' : 'task';
+      const lastInput = container.querySelector(`tr:last-child .cell-input[data-field="${field}"]`);
+      if (lastInput) lastInput.focus();
     }
   } catch (error) {
     alert(`Ошибка создания: ${error.message}`);
@@ -348,11 +348,9 @@ async function loadTasks() {
 }
 
 async function loadPeople() {
-  let taskNameTemplates;
-  [people, categories, taskNameTemplates] = await Promise.all([
+  [people, categories] = await Promise.all([
     api('/api/people'),
     api('/api/categories'),
-    api('/api/task-name-templates'),
   ]);
   const stored = localStorage.getItem(PERSON_STORAGE_KEY) || '';
   personSelect.replaceChildren();
@@ -371,7 +369,6 @@ async function loadPeople() {
   });
 
   populateTaskTypeSelect(taskTypeSelect, ADMIN_TASK_CATEGORY);
-  populateTaskNameTemplates(taskNameTemplatesList, taskNameTemplates);
 }
 
 personSelect.addEventListener('change', async () => {
@@ -417,14 +414,11 @@ document.getElementById('btn-vacation-apply')?.addEventListener('click', async (
 
 function closeTaskPopover() {
   taskPopover?.classList.add('hidden');
-  if (taskNameInput) taskNameInput.value = '';
 }
 
 document.getElementById('btn-add')?.addEventListener('click', (e) => {
   e.stopPropagation();
-  const willOpen = taskPopover?.classList.contains('hidden');
   taskPopover?.classList.toggle('hidden');
-  if (willOpen) taskNameInput?.focus();
 });
 
 taskPopover?.addEventListener('click', (e) => e.stopPropagation());
@@ -433,28 +427,16 @@ document.getElementById('btn-task-cancel')?.addEventListener('click', closeTaskP
 
 async function submitTaskPopover() {
   const type = taskTypeSelect?.value || '';
-  const name = (taskNameInput?.value || '').trim();
   const isProject = type === PROJECT_TYPE_VALUE;
 
-  if (isProject && !name) {
-    taskNameInput?.focus();
-    return;
-  }
-
   const overrides = isProject
-    ? { task: '', category: name, is_project: true }
-    : { task: name, category: type };
-  await addQuickTask(overrides, !isProject && !name);
+    ? { task: '', category: '', is_project: true }
+    : { task: '', category: type };
+  await addQuickTask(overrides, true);
   closeTaskPopover();
 }
 
 document.getElementById('btn-task-apply')?.addEventListener('click', submitTaskPopover);
-taskNameInput?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    submitTaskPopover();
-  }
-});
 
 document.addEventListener('click', () => {
   vacationPopover?.classList.add('hidden');

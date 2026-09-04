@@ -159,16 +159,6 @@ function populateTaskTypeSelect(select, adminCategoryName) {
   select.appendChild(adminOption);
 }
 
-function populateTaskNameTemplates(datalistEl, templates) {
-  if (!datalistEl) return;
-  datalistEl.replaceChildren();
-  templates.forEach((item) => {
-    const option = document.createElement('option');
-    option.value = item.name;
-    datalistEl.appendChild(option);
-  });
-}
-
 function populateStatusSelect(select, selectedValue = 'new') {
   if (!select) return;
   select.replaceChildren();
