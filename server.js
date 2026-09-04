@@ -439,9 +439,13 @@ function canAccessTask(user, taskRow) {
 }
 
 // --- static pages ---
+// --- static pages ---
 app.get('/', (req, res) => sendThemedHtml(res, 'index.html'));
+app.get('/new', (req, res) => res.redirect(301, '/'));
+app.get('/old', (req, res) => sendThemedHtml(res, 'old.html'));
 app.get('/login', (req, res) => sendThemedHtml(res, 'login.html'));
 app.get('/admin', (req, res) => sendThemedHtml(res, 'admin.html'));
+app.get('/admin-old', (req, res) => sendThemedHtml(res, 'admin-old.html'));
 
 // --- auth ---
 app.post('/api/login', (req, res) => {
@@ -863,7 +867,7 @@ app.delete('/api/categories/:categoryId', adminRequired, (req, res) => {
 
 // static assets: explicit allowlist only — never blanket-serve BASE_DIR
 // (that would also expose .env, data/timesheet.db, server.js, node_modules, etc.)
-const STATIC_FILES = ['styles.css', 'app.js', 'admin.js', 'login.js', 'api.js', 'week.js', 'table-resize.js', 'tour.js'];
+const STATIC_FILES = ['styles.css', 'new.css', 'app.js', 'admin.js', 'login.js', 'api.js', 'week.js', 'table-resize.js', 'tour.js', 'new.js'];
 for (const file of STATIC_FILES) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(BASE_DIR, file)));
 }

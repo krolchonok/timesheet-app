@@ -6,51 +6,54 @@
   <title>Админ — все задачи</title>
   <script>(function(){try{var d="__UI_THEME_DEFAULT__";var t=localStorage.getItem('timesheet-theme')||d;if(t&&t!=='default')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="new.css">
 </head>
 <body>
-  <div class="app app--wide app--v2 app--v2-admin">
-    <div class="v2-chrome">
+  <div class="app app--wide">
+    <div class="topbar">
       <div class="brand">
         <div class="brand__mark">TS</div>
         <div class="brand__text">
           <span class="brand__name">Timesheet</span>
-          <span class="brand__tag">Админ</span>
+          <span class="brand__tag">Админ-панель</span>
         </div>
       </div>
-
-      <nav class="admin-tabs v2-admin-tabs" aria-label="Режим админ-панели">
-        <button type="button" class="admin-tabs__btn admin-tabs__btn--active" data-mode="view">Просмотр</button>
-        <button type="button" class="admin-tabs__btn" data-mode="manage">Управление</button>
-      </nav>
-
-      <div class="v2-chrome__filters" id="toolbar-view">
-        <div class="week-picker">
-          <button type="button" class="week-picker__nav" id="week-prev" aria-label="Предыдущая неделя">←</button>
-          <label class="week-picker__field">
-            <span>Неделя</span>
-            <select id="week-select"></select>
-          </label>
-          <button type="button" class="week-picker__nav" id="week-next" aria-label="Следующая неделя">→</button>
-        </div>
-        <label class="toolbar__field">
-          <span>Поиск</span>
-          <input type="text" id="search" placeholder="ФИО, задача...">
-        </label>
-        <span class="toolbar__hint" id="task-count"></span>
-      </div>
-
-      <div class="v2-chrome__actions">
-        <button type="button" class="btn btn--secondary btn--small" id="btn-export">Экспорт CSV</button>
+      <div class="topbar__actions">
         <button type="button" class="theme-toggle" id="theme-toggle"></button>
-        <button type="button" class="btn btn--ghost btn--small" id="btn-logout">Выйти</button>
         <span class="user-badge" id="user-badge"></span>
       </div>
     </div>
 
-    <!-- Kept for admin.js mode copy updates; visually hidden -->
-    <h1 class="v2-sr-only" id="admin-title">Просмотр</h1>
-    <p class="v2-sr-only" id="admin-subtitle"></p>
+    <header class="header">
+      <div class="header__text">
+        <h1 id="admin-title">Просмотр</h1>
+        <p class="subtitle" id="admin-subtitle">40 ч = проектная строка + административные задачи сотрудника. Вы задаёте итоговое наименование (→)</p>
+      </div>
+      <div class="header__actions">
+        <button type="button" class="btn btn--secondary" id="btn-export">Экспорт CSV</button>
+        <button type="button" class="btn btn--ghost" id="btn-logout">Выйти</button>
+      </div>
+    </header>
+
+    <nav class="admin-tabs" aria-label="Режим админ-панели">
+      <button type="button" class="admin-tabs__btn admin-tabs__btn--active" data-mode="view">Просмотр</button>
+      <button type="button" class="admin-tabs__btn" data-mode="manage">Управление</button>
+    </nav>
+
+    <div class="toolbar" id="toolbar-view">
+      <div class="week-picker">
+        <button type="button" class="week-picker__nav" id="week-prev" aria-label="Предыдущая неделя">←</button>
+        <label class="week-picker__field">
+          <span>Неделя</span>
+          <select id="week-select"></select>
+        </label>
+        <button type="button" class="week-picker__nav" id="week-next" aria-label="Следующая неделя">→</button>
+      </div>
+      <label class="toolbar__field">
+        <span>Поиск</span>
+        <input type="text" id="search" placeholder="ФИО, задача...">
+      </label>
+      <span class="toolbar__hint" id="task-count"></span>
+    </div>
 
     <section class="completion-panel" id="panel-view">
       <div class="completion-panel__head">
@@ -61,17 +64,16 @@
         <div class="completion-panel__actions">
           <button type="button" class="btn btn--small btn--secondary" id="btn-show-all">Показать все</button>
           <button type="button" class="btn btn--small btn--ghost" id="btn-hide-all">Скрыть все</button>
-          <button type="button" class="btn btn--small btn--secondary" id="btn-expand-all">Развернуть</button>
-          <button type="button" class="btn btn--small btn--ghost" id="btn-collapse-all">Свернуть</button>
         </div>
       </div>
+      <p class="completion-panel__hint">40 ч = проектные часы (строка) + задачи категории «Административные» (создаёт сотрудник). Вы — итоговое название и статус.</p>
       <div id="completion-list" class="completion-list"></div>
     </section>
 
-    <!-- users-list-toolbar kept for admin.js visibility toggle; buttons live above -->
-    <div class="users-list-toolbar v2-sr-only" id="users-list-toolbar" aria-hidden="true"></div>
-
     <section class="manage-panel hidden" id="panel-manage">
+      <h2>Справочники</h2>
+      <p class="manage-panel__hint">Добавление сотрудников и категорий задач</p>
+
       <div class="manage-block">
         <h3 class="manage-block__title">Сотрудники</h3>
         <form id="add-person-form" class="people-form">
@@ -92,6 +94,7 @@
 
       <div class="manage-block">
         <h3 class="manage-block__title">Типовые названия задач</h3>
+        <p class="manage-block__hint">Подсказки в поле «Название» при создании задачи (например «Совещание»)</p>
         <form id="add-task-name-template-form" class="people-form">
           <input type="text" id="new-task-name-template" placeholder="Например: Совещание" required>
           <button type="submit" class="btn btn--secondary btn--small">Добавить</button>
@@ -103,10 +106,15 @@
         <h3 class="manage-block__title">Настройки</h3>
         <label class="settings-check">
           <input type="checkbox" id="setting-allow-project-tasks">
-          <span>Разрешить доп. проектные задачи у сотрудников</span>
+          <span>Разрешить создавать доп. проектные задачи (кнопка «+ Проект» у сотрудников)</span>
         </label>
       </div>
     </section>
+
+    <div class="users-list-toolbar" id="users-list-toolbar">
+      <button type="button" class="btn btn--small btn--secondary" id="btn-expand-all">Развернуть все</button>
+      <button type="button" class="btn btn--small btn--ghost" id="btn-collapse-all">Свернуть все</button>
+    </div>
 
     <div id="users-list" class="users-list"></div>
     <p class="empty-hint hidden" id="empty-hint">Задач пока нет</p>

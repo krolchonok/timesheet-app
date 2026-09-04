@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Таблица задач — Timesheet</title>
+  <title>Таблица задач — MS Project</title>
   <script>(function(){try{var d="__UI_THEME_DEFAULT__";var t=localStorage.getItem('timesheet-theme')||d;if(t&&t!=='default')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="new.css">
 </head>
 <body>
-  <div class="app app--v2">
-    <div class="v2-chrome">
+  <div class="app">
+    <div class="topbar">
       <div class="brand">
         <div class="brand__mark">TS</div>
         <div class="brand__text">
@@ -18,49 +17,23 @@
           <span class="brand__tag">MS Project</span>
         </div>
       </div>
-
-      <div class="v2-chrome__filters">
-        <div class="week-picker">
-          <button type="button" class="week-picker__nav" id="week-prev" aria-label="Предыдущая неделя">←</button>
-          <label class="week-picker__field">
-            <span>Неделя</span>
-            <select id="week-select"></select>
-          </label>
-          <button type="button" class="week-picker__nav" id="week-next" aria-label="Следующая неделя">→</button>
-        </div>
-        <label class="toolbar__field toolbar__field--person">
-          <span>ФИО</span>
-          <select id="person-select">
-            <option value="">— Выберите сотрудника —</option>
-          </select>
-        </label>
-        <div class="fill-indicator hidden" id="fill-indicator" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-          <span class="fill-indicator__label" id="fill-label">0 / 40 ч</span>
-          <div class="fill-indicator__track">
-            <div class="fill-indicator__bar" id="fill-bar"></div>
-          </div>
-          <span class="fill-indicator__percent" id="fill-percent">0%</span>
-        </div>
+      <div class="topbar__actions">
+        <button type="button" class="btn btn--secondary btn--small" id="btn-tour">? Инструкция</button>
+        <button type="button" class="theme-toggle" id="theme-toggle"></button>
+        <span class="user-badge" id="user-badge">Открытый доступ</span>
       </div>
+    </div>
 
-      <div class="v2-chrome__actions">
+    <header class="header">
+      <div class="header__text">
+        <h1>Мои задачи</h1>
+        <p class="subtitle">Задачи и проекты добавляете вы; руководитель задаёт итоговое название.</p>
+      </div>
+      <div class="header__actions">
+        <button type="button" class="btn btn--secondary" id="btn-export" disabled>Экспорт CSV</button>
+        <button type="button" class="btn btn--secondary" id="btn-add-downtime" disabled>+ Простой</button>
         <div class="popover-wrap">
-          <button type="button" class="btn btn--primary" id="btn-add" disabled>+ Задача</button>
-          <div class="popover hidden" id="task-popover">
-            <p class="popover__title">Новая задача</p>
-            <label class="popover__field">
-              <span>Тип</span>
-              <select id="task-type-select"></select>
-            </label>
-            <div class="popover__actions">
-              <button type="button" class="btn btn--ghost btn--small" id="btn-task-cancel">Отмена</button>
-              <button type="button" class="btn btn--primary btn--small" id="btn-task-apply">Добавить</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="popover-wrap">
-          <button type="button" class="btn btn--ghost btn--small" id="btn-vacation" disabled>Отпуск</button>
+          <button type="button" class="btn btn--secondary" id="btn-vacation" disabled>Отпуск</button>
           <div class="popover hidden" id="vacation-popover">
             <p class="popover__title">Отметить отпуск на неделе</p>
             <div class="popover__days">
@@ -76,29 +49,54 @@
             </div>
           </div>
         </div>
-
-        <div class="more-menu" id="more-menu">
-          <button type="button" class="btn btn--secondary btn--small more-menu__toggle" id="more-menu-toggle" aria-expanded="false" aria-haspopup="true">Ещё</button>
-          <div class="more-menu__panel hidden" id="more-menu-panel" role="menu">
-            <button type="button" class="more-menu__item" id="btn-export" role="menuitem" disabled>Экспорт CSV</button>
-            <button type="button" class="more-menu__item" id="btn-add-downtime" role="menuitem" disabled>+ Простой</button>
-            <button type="button" class="more-menu__item" id="btn-tour" role="menuitem">Инструкция</button>
-            <button type="button" class="more-menu__item theme-toggle" id="theme-toggle" role="menuitem"></button>
-            <a href="/login" class="more-menu__item" role="menuitem">Админ</a>
-            <a href="/old" class="more-menu__item more-menu__item--muted" role="menuitem">Старая версия</a>
+        <div class="popover-wrap">
+          <button type="button" class="btn btn--primary" id="btn-add" disabled>+ Задача</button>
+          <div class="popover hidden" id="task-popover">
+            <p class="popover__title">Новая задача</p>
+            <label class="popover__field">
+              <span>Тип</span>
+              <select id="task-type-select"></select>
+            </label>
+            <div class="popover__actions">
+              <button type="button" class="btn btn--ghost btn--small" id="btn-task-cancel">Отмена</button>
+              <button type="button" class="btn btn--primary btn--small" id="btn-task-apply">Добавить</button>
+            </div>
           </div>
         </div>
+        <a href="/login" class="btn btn--ghost">Админ</a>
+      </div>
+    </header>
 
-        <span class="user-badge" id="user-badge">Открытый доступ</span>
+    <div class="toolbar">
+      <div class="week-picker">
+        <button type="button" class="week-picker__nav" id="week-prev" aria-label="Предыдущая неделя">←</button>
+        <label class="week-picker__field">
+          <span>Неделя</span>
+          <select id="week-select"></select>
+        </label>
+        <button type="button" class="week-picker__nav" id="week-next" aria-label="Следующая неделя">→</button>
+      </div>
+      <label class="toolbar__field toolbar__field--person">
+        <span>ФИО</span>
+        <select id="person-select">
+          <option value="">— Выберите сотрудника —</option>
+        </select>
+      </label>
+      <div class="fill-indicator hidden" id="fill-indicator" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <span class="fill-indicator__label" id="fill-label">0 / 40 ч</span>
+        <div class="fill-indicator__track">
+          <div class="fill-indicator__bar" id="fill-bar"></div>
+        </div>
+        <span class="fill-indicator__percent" id="fill-percent">0%</span>
       </div>
     </div>
-
-    <p class="v2-hint" id="person-hint">Выберите ФИО, чтобы открыть таблицы</p>
+    <p class="toolbar__hint toolbar__hint--below" id="person-hint">Сначала выберите ФИО из списка</p>
 
     <div class="tasks-layout hidden" id="tasks-layout">
       <section class="task-section">
         <div class="task-section__head">
           <h2>Административные задачи</h2>
+          <p>Админ. задачи — в норму 40 ч. Прочие — только для отчёта руководителю</p>
         </div>
         <div class="table-wrap">
           <table class="task-table" id="task-table">
@@ -122,7 +120,7 @@
             <tbody id="task-body"></tbody>
             <tfoot>
               <tr>
-                <td colspan="5" class="footer-label">Итого</td>
+                <td colspan="5" class="footer-label">Итого по дням</td>
                 <td class="day-total" data-day="mon">0</td>
                 <td class="day-total" data-day="tue">0</td>
                 <td class="day-total" data-day="wed">0</td>
@@ -139,6 +137,7 @@
       <section class="task-section task-section--project" id="project-section">
         <div class="task-section__head">
           <h2>Проектные задачи</h2>
+          <p>Добавляйте свои проекты кнопкой «+ Задача» (тип «Проектная задача») — название и часы задаёте сами</p>
         </div>
         <div class="table-wrap">
           <table class="task-table task-table--project" id="project-table" data-no-resize="true">
@@ -159,7 +158,7 @@
             <tbody id="project-body"></tbody>
             <tfoot>
               <tr>
-                <td colspan="3" class="footer-label">Итого</td>
+                <td colspan="3" class="footer-label">Итого по дням</td>
                 <td class="day-total" data-day="mon">0</td>
                 <td class="day-total" data-day="tue">0</td>
                 <td class="day-total" data-day="wed">0</td>
@@ -173,15 +172,36 @@
         </div>
       </section>
 
-      <section class="task-section task-section--summary v2-summary" id="summary-section">
-        <div class="v2-summary__row">
-          <span class="footer-label">Всего</span>
-          <span class="day-total" data-day="mon">0</span>
-          <span class="day-total" data-day="tue">0</span>
-          <span class="day-total" data-day="wed">0</span>
-          <span class="day-total" data-day="thu">0</span>
-          <span class="day-total" data-day="fri">0</span>
-          <span class="grand-total" id="overall-grand-total">0</span>
+      <section class="task-section task-section--summary" id="summary-section">
+        <div class="task-section__head">
+          <h2>Итого по всем задачам</h2>
+          <p>Административные и проектные часы вместе</p>
+        </div>
+        <div class="table-wrap">
+          <table class="task-table task-table--summary" data-no-resize="true">
+            <thead>
+              <tr>
+                <th class="col-summary-label"></th>
+                <th class="col-day" data-day="mon">Пн</th>
+                <th class="col-day" data-day="tue">Вт</th>
+                <th class="col-day" data-day="wed">Ср</th>
+                <th class="col-day" data-day="thu">Чт</th>
+                <th class="col-day" data-day="fri">Пт</th>
+                <th class="col-total">Σ</th>
+              </tr>
+            </thead>
+            <tfoot>
+              <tr>
+                <td class="col-summary-label footer-label">Всего часов</td>
+                <td class="day-total" data-day="mon">0</td>
+                <td class="day-total" data-day="tue">0</td>
+                <td class="day-total" data-day="wed">0</td>
+                <td class="day-total" data-day="thu">0</td>
+                <td class="day-total" data-day="fri">0</td>
+                <td class="grand-total" id="overall-grand-total">0</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </section>
     </div>
@@ -259,6 +279,5 @@
   <script src="table-resize.js"></script>
   <script src="app.js"></script>
   <script src="tour.js"></script>
-  <script src="new.js"></script>
 </body>
 </html>
