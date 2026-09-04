@@ -32,10 +32,12 @@
   });
 
   document.addEventListener('click', (e) => {
+    // Во время инструкции меню открывает сам тур — не закрываем по клику «Далее».
+    if (document.querySelector('.tour-overlay')) return;
     if (!menu.contains(e.target)) closeMenu();
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMenu();
+    if (e.key === 'Escape' && !document.querySelector('.tour-overlay')) closeMenu();
   });
 })();

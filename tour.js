@@ -125,7 +125,9 @@
   function openMoreMenu() {
     const panel = moreMenuPanel();
     const toggle = moreMenuToggle();
+    const wrap = document.getElementById('more-menu');
     if (!panel || !toggle) return;
+    wrap?.classList.add('tour-elevated');
     panel.classList.remove('hidden');
     toggle.setAttribute('aria-expanded', 'true');
   }
@@ -133,7 +135,9 @@
   function closeMoreMenu() {
     const panel = moreMenuPanel();
     const toggle = moreMenuToggle();
+    const wrap = document.getElementById('more-menu');
     if (!panel || !toggle) return;
+    wrap?.classList.remove('tour-elevated');
     panel.classList.add('hidden');
     toggle.setAttribute('aria-expanded', 'false');
   }
@@ -180,9 +184,18 @@
     overlay.appendChild(tooltip);
     document.body.appendChild(overlay);
 
-    overlay.querySelector('#tour-skip').addEventListener('click', endTour);
-    overlay.querySelector('#tour-prev').addEventListener('click', () => goTo(stepIndex - 1));
-    overlay.querySelector('#tour-next').addEventListener('click', () => goTo(stepIndex + 1));
+    overlay.querySelector('#tour-skip').addEventListener('click', (e) => {
+      e.stopPropagation();
+      endTour();
+    });
+    overlay.querySelector('#tour-prev').addEventListener('click', (e) => {
+      e.stopPropagation();
+      goTo(stepIndex - 1);
+    });
+    overlay.querySelector('#tour-next').addEventListener('click', (e) => {
+      e.stopPropagation();
+      goTo(stepIndex + 1);
+    });
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) endTour();
     });
