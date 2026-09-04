@@ -223,7 +223,7 @@ function render() {
     const td = document.createElement('td');
     td.colSpan = 10;
     td.className = 'task-row--empty-cell';
-    td.textContent = 'Проектов пока нет — добавьте кнопкой «+ Задача» (тип «Проект»)';
+    td.textContent = 'Проектов пока нет — добавьте кнопкой «+ Задача» (тип «Проектная задача»)';
     tr.appendChild(td);
     projectBody.appendChild(tr);
   } else {
@@ -370,7 +370,7 @@ async function loadPeople() {
     personSelect.appendChild(option);
   });
 
-  populateTaskTypeSelect(taskTypeSelect, categories);
+  populateTaskTypeSelect(taskTypeSelect, ADMIN_TASK_CATEGORY);
   populateTaskNameTemplates(taskNameTemplatesList, taskNameTemplates);
 }
 

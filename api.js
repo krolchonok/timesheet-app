@@ -144,24 +144,19 @@ function populateCategorySelect(select, categories, selectedValue = '') {
 
 const PROJECT_TYPE_VALUE = '__project__';
 
-function populateTaskTypeSelect(select, categories) {
+function populateTaskTypeSelect(select, adminCategoryName) {
   if (!select) return;
   select.replaceChildren();
 
   const projectOption = document.createElement('option');
   projectOption.value = PROJECT_TYPE_VALUE;
-  projectOption.textContent = 'Проект';
+  projectOption.textContent = 'Проектная задача';
   select.appendChild(projectOption);
 
-  const categoryGroup = document.createElement('optgroup');
-  categoryGroup.label = 'Категория';
-  categories.forEach((item) => {
-    const option = document.createElement('option');
-    option.value = item.name;
-    option.textContent = item.name;
-    categoryGroup.appendChild(option);
-  });
-  select.appendChild(categoryGroup);
+  const adminOption = document.createElement('option');
+  adminOption.value = adminCategoryName;
+  adminOption.textContent = 'Административная';
+  select.appendChild(adminOption);
 }
 
 function populateTaskNameTemplates(datalistEl, templates) {
