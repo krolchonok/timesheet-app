@@ -1,5 +1,5 @@
 (function () {
-  const SHORTCUT_HINT = 'Ctrl+Shift+M';
+  const SHORTCUT_HINT = 'Alt+Shift+P';
 
   let overlay = null;
   let lastPointerEl = null;
@@ -106,8 +106,8 @@
     overlay.className = 'modal-overlay problem-modal-overlay hidden';
     overlay.innerHTML = `
       <div class="modal problem-modal" role="dialog" aria-modal="true" aria-labelledby="problem-modal-title">
-        <h3 class="modal__title" id="problem-modal-title">Сообщить о проблеме</h3>
-        <p class="problem-modal__hint">Кратко опишите, что не так. Шорткат ${SHORTCUT_HINT} передаёт выделенный или активный элемент вместе с комментарием.</p>
+        <h3 class="modal__title" id="problem-modal-title">Отправить жалобу</h3>
+        <p class="problem-modal__hint">Опишите проблему. Шорткат ${SHORTCUT_HINT} открывает форму и сразу прикрепляет выделенный или активный элемент.</p>
         <div class="problem-modal__element hidden" id="problem-element-preview"></div>
         <label class="modal__field">
           <span>Комментарий</span>
@@ -220,9 +220,8 @@
       return;
     }
     const key = e.key?.toLowerCase();
-    if (key === 'm' && e.shiftKey && (e.ctrlKey || e.metaKey) && !e.altKey) {
-      const tag = e.target?.tagName?.toLowerCase();
-      if ((tag === 'input' || tag === 'textarea' || tag === 'select') && !e.ctrlKey && !e.metaKey) return;
+    // Alt+Shift+P — без Ctrl/Cmd, чтобы не пересекаться с шорткатами браузера
+    if (key === 'p' && e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       openModal({ capture: true });
     }
@@ -231,7 +230,7 @@
   const menuBtn = document.getElementById('btn-report-problem');
   if (menuBtn) {
     menuBtn.addEventListener('click', () => openModal({ capture: false }));
-    menuBtn.title = `Открыть форму (${SHORTCUT_HINT} — с выделенным элементом)`;
+    menuBtn.title = `Открыть форму жалобы (${SHORTCUT_HINT} — с выделенным элементом)`;
   }
 
   window.TimesheetFeedback = { open: openModal, capture: captureTargetElement };
