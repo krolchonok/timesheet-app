@@ -39,8 +39,8 @@
   --col-task: 16%;
   --col-final-task: 16%;
   --col-status: 8%;
-  --col-day: 4.5%;
-  --col-total: 4%;
+  --col-day: 3.1%;
+  --col-total: 3.2%;
   --col-comment: 14%;
   --col-actions: 5.5%;
 }
@@ -1206,13 +1206,15 @@ body {
 }
 
 .task-table--summary .col-day {
-  width: 12%;
-  min-width: 48px;
+  width: 7%;
+  min-width: 40px;
+  max-width: 52px;
 }
 
 .task-table--summary .col-total {
-  width: 10%;
-  min-width: 50px;
+  width: 7%;
+  min-width: 42px;
+  max-width: 56px;
 }
 
 .task-table--summary tfoot .footer-label {
@@ -1240,13 +1242,15 @@ body {
 }
 
 .task-table--project .col-day {
-  width: 9%;
-  min-width: 48px;
+  width: 4.5%;
+  min-width: 40px;
+  max-width: 52px;
 }
 
 .task-table--project .col-total {
-  width: 5%;
-  min-width: 44px;
+  width: 4%;
+  min-width: 40px;
+  max-width: 52px;
 }
 
 .task-table--project thead th {
@@ -1275,8 +1279,18 @@ body {
 .col-task { width: var(--col-task); }
 .col-final-task { width: var(--col-final-task); }
 .col-status { width: var(--col-status); }
-.col-day { width: var(--col-day); }
-.col-total { width: var(--col-total); text-align: center; }
+.col-day {
+  width: var(--col-day);
+  min-width: 40px;
+  max-width: 52px;
+}
+
+.col-total {
+  width: var(--col-total);
+  text-align: center;
+  min-width: 40px;
+  max-width: 56px;
+}
 .col-comment { width: var(--col-comment); }
 .col-actions { width: var(--col-actions); }
 .col-actions-wide { width: 140px; }
@@ -1381,10 +1395,10 @@ textarea.cell-input {
 
 .cell-input--hours {
   text-align: center;
-  padding: 11px 4px;
+  padding: 8px 2px;
   font-family: var(--font);
   font-variant-numeric: tabular-nums;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   -moz-appearance: textfield;
 }
