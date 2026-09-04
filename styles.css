@@ -810,6 +810,107 @@ body {
   gap: 8px;
 }
 
+.problem-modal {
+  max-width: 440px;
+}
+
+.problem-modal__hint {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.problem-modal__element {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  font-size: 0.8rem;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.problem-modal__element code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.78rem;
+}
+
+.problem-modal .modal__field textarea {
+  display: block;
+  width: 100%;
+  min-height: 96px;
+  box-sizing: border-box;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.problem-modal .modal__field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.problem-modal__status {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: #b42318;
+}
+
+.manage-block__hint {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.problem-reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.problem-report-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.problem-report-card__meta {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+}
+
+.problem-report-card__comment {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.problem-report-card__element {
+  display: block;
+  max-width: 100%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--surface-muted);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
 .cell-text--hours {
   text-align: center;
   font-family: var(--font);
