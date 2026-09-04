@@ -103,7 +103,7 @@ function bindRowInputs(row, tr, allowDelete) {
   tr.querySelector('.row-total').textContent = formatHours(rowTotal(row));
 
   if (allowDelete) {
-    tr.querySelector('.btn-delete').addEventListener('click', async () => {
+    tr.querySelector('.btn-delete')?.addEventListener('click', async () => {
       if (!confirm('Удалить задачу?')) return;
       saveTaskDebounced.cancel(row.id);
       try {
@@ -117,6 +117,11 @@ function bindRowInputs(row, tr, allowDelete) {
     });
   }
 
+  tr.querySelector('.btn-convert-type')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await convertTaskType(row);
+  });
+
   tr.querySelectorAll('.cell-input').forEach((input) => {
     if (input.tagName === 'TEXTAREA') {
       autoGrowTextarea(input);
@@ -129,6 +134,42 @@ function bindRowInputs(row, tr, allowDelete) {
   tr.querySelectorAll('.cell-select').forEach((select) => {
     select.addEventListener('change', () => onCellChange(row.id, select, tr));
   });
+}
+
+function makeConvertTypeButton(row) {
+  const toProject = !isProjectRow(row);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-icon btn-convert-type';
+  btn.title = toProject ? 'Сделать проектной' : 'Сделать административной';
+  btn.setAttribute('aria-label', btn.title);
+  btn.textContent = toProject ? 'П' : 'А';
+  return btn;
+}
+
+async function convertTaskType(row) {
+  if (row.is_project && !row.project_editable) {
+    alert('Эту проектную строку нельзя менять');
+    return;
+  }
+  const toProject = !isProjectRow(row);
+  const label = toProject ? 'проектную' : 'административную';
+  if (!confirm(`Перевести задачу в ${label}?`)) return;
+
+  saveTaskDebounced.cancel(row.id);
+  const payload = buildTypeConversionPayload(row, toProject, categories, ADMIN_TASK_CATEGORY);
+  try {
+    const updated = await api(`/api/tasks/${row.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    Object.assign(row, updated);
+    progress = buildProgressFromRows(rows);
+    render();
+    weekPicker?.refreshWeeksList();
+  } catch (error) {
+    alert(`Ошибка смены типа: ${error.message}`);
+  }
 }
 
 function renderProjectRow(row, index, tbodyEl) {
@@ -168,13 +209,16 @@ function renderProjectRow(row, index, tbodyEl) {
   });
 
   if (row.project_editable) {
+    const actions = tr.querySelector('.col-actions');
+    actions.replaceChildren();
+    actions.appendChild(makeConvertTypeButton(row));
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
     deleteBtn.className = 'btn-icon btn-delete';
     deleteBtn.title = 'Удалить проект';
     deleteBtn.setAttribute('aria-label', 'Удалить проект');
     deleteBtn.textContent = '×';
-    tr.querySelector('.col-actions').replaceChildren(deleteBtn);
+    actions.appendChild(deleteBtn);
   }
 
   bindRowInputs(row, tr, !!row.project_editable);
@@ -206,6 +250,10 @@ function renderCustomRow(row, index, tbodyEl) {
   });
 
   tbodyEl.appendChild(tr);
+  const actions = tr.querySelector('.col-actions');
+  const deleteBtn = actions.querySelector('.btn-delete');
+  actions.replaceChildren(makeConvertTypeButton(row));
+  if (deleteBtn) actions.appendChild(deleteBtn);
   bindRowInputs(row, tr, true);
 }
 

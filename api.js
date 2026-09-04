@@ -193,6 +193,26 @@ function isProjectRow(row) {
   return Boolean(row.is_project);
 }
 
+function preferredAdminCategory(currentCategory, categoryList, fallbackName) {
+  const names = (categoryList || []).map((item) => item.name);
+  const current = String(currentCategory || '').trim();
+  if (current && names.includes(current)) return current;
+  if (fallbackName && names.includes(fallbackName)) return fallbackName;
+  return names[0] || current || fallbackName || '';
+}
+
+function buildTypeConversionPayload(row, toProject, categoryList, adminCategoryName) {
+  const payload = taskPayload(row);
+  payload.is_project = Boolean(toProject);
+  if (toProject) {
+    // category field becomes project name — keep whatever was there for editing
+    payload.category = String(row.category || '').trim();
+  } else {
+    payload.category = preferredAdminCategory(row.category, categoryList, adminCategoryName);
+  }
+  return payload;
+}
+
 function normHoursBreakdown(rows) {
   let project = 0;
   let report = 0;

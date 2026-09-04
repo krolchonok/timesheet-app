@@ -609,14 +609,24 @@ app.put('/api/tasks/:taskId', (req, res) => {
     }
   }
 
+  let isProject = row.is_project ? 1 : 0;
+  let projectEditable = row.project_editable ? 1 : 0;
+  if ('is_project' in payload && !(row.is_project && !row.project_editable)) {
+    isProject = payload.is_project ? 1 : 0;
+    // Converted / toggled project rows are always employee-editable.
+    projectEditable = isProject ? 1 : 0;
+  }
+
   db.prepare(`
     UPDATE tasks
-    SET fio = ?, task = ?, category = ?, final_task = ?, status = ?,
+    SET fio = ?, task = ?, is_project = ?, project_editable = ?, category = ?, final_task = ?, status = ?,
         mon = ?, tue = ?, wed = ?, thu = ?, fri = ?, comment = ?, week_start = ?, updated_at = ?
     WHERE id = ?
   `).run(
     fio,
     parsed.task,
+    isProject,
+    projectEditable,
     parsed.category,
     finalTask,
     status,

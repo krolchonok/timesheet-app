@@ -42,7 +42,7 @@
   --col-day: 4.5%;
   --col-total: 4%;
   --col-comment: 14%;
-  --col-actions: 3%;
+  --col-actions: 5.5%;
 }
 
 .hidden {
@@ -1437,6 +1437,32 @@ textarea.cell-input {
 .btn-delete:hover {
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+.btn-convert-type {
+  width: auto;
+  min-width: 32px;
+  padding: 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.btn-convert-type:hover {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary-hover);
+}
+
+.col-actions {
+  white-space: nowrap;
+}
+
+.col-actions .btn-icon {
+  display: inline-flex;
+  vertical-align: middle;
 }
 
 .btn-copy {

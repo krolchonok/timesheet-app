@@ -352,7 +352,46 @@ function renderTaskRowView(row, index, tbody) {
     }
   });
 
+  const actions = tr.querySelector('.col-actions');
   const deleteBtn = tr.querySelector('.btn-delete');
+  const convertBtn = document.createElement('button');
+  convertBtn.type = 'button';
+  convertBtn.className = 'btn-icon btn-convert-type';
+  const toProject = !isProjectRow(row);
+  convertBtn.title = toProject ? 'Сделать проектной' : 'Сделать административной';
+  convertBtn.setAttribute('aria-label', convertBtn.title);
+  convertBtn.textContent = toProject ? 'П' : 'А';
+  convertBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (row.is_project && !row.project_editable) {
+      alert('Эту проектную строку нельзя менять');
+      return;
+    }
+    const nextProject = !isProjectRow(row);
+    const label = nextProject ? 'проектную' : 'административную';
+    if (!confirm(`Перевести задачу в ${label}?`)) return;
+    saveTaskDebounced.cancel(row.id);
+    const payload = buildTypeConversionPayload(row, nextProject, categories, 'Административные задачи');
+    try {
+      const updated = await api(`/api/tasks/${row.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      Object.assign(row, updated);
+      completion = await api(`/api/completion?week=${encodeURIComponent(weekPicker.getWeek())}`);
+      renderCompletion();
+      render();
+    } catch (error) {
+      alert(`Ошибка смены типа: ${error.message}`);
+    }
+  });
+
+  if (actions) {
+    const keep = [];
+    if (deleteBtn) keep.push(deleteBtn);
+    actions.replaceChildren(convertBtn, ...keep);
+  }
+
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
       if (!confirm('Удалить задачу?')) return;
