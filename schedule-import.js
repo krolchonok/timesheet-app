@@ -6,17 +6,26 @@
   const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
   const DAY_LABELS = { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт' };
   const DAY_HEADER_RE = {
-    mon: /^Пн(\s|$)/i,
-    tue: /^Вт(\s|$)/i,
-    wed: /^Ср(\s|$)/i,
-    thu: /^Чт(\s|$)/i,
-    fri: /^Пт(\s|$)/i,
+    mon: /^Пн(\s|$|[.\-0-9])/i,
+    tue: /^Вт(\s|$|[.\-0-9])/i,
+    wed: /^Ср(\s|$|[.\-0-9])/i,
+    thu: /^Чт(\s|$|[.\-0-9])/i,
+    fri: /^Пт(\s|$|[.\-0-9])/i,
   };
+
+  function normalizeText(value) {
+    return String(value == null ? '' : value)
+      .replace(/\u00a0/g, ' ')
+      .replace(/[\u200b\u200c\u200d\ufeff]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
 
   function parseHours(value) {
     if (value == null || value === '') return 0;
     if (typeof value === 'number' && Number.isFinite(value)) return value;
-    const raw = String(value).trim().replace(/\s+/g, '').replace(/ч$/i, '').replace(',', '.');
+    if (typeof value === 'boolean') return value ? 1 : 0;
+    const raw = normalizeText(value).replace(/\s+/g, '').replace(/ч$/i, '').replace(',', '.');
     if (!raw) return 0;
     const n = Number(raw);
     return Number.isFinite(n) ? n : 0;
@@ -25,7 +34,7 @@
   function findDayColumns(headerRow) {
     const map = {};
     (headerRow || []).forEach((cell, index) => {
-      const text = String(cell || '').trim();
+      const text = normalizeText(cell);
       if (!text) return;
       for (const day of DAY_KEYS) {
         if (DAY_HEADER_RE[day].test(text)) map[day] = index;
@@ -34,53 +43,162 @@
     return map;
   }
 
-  function isProjectHeaderRow(status, taskName) {
-    return String(status || '').trim() === 'Снят'
-      || /^Название проекта\s*:/i.test(String(taskName || '').trim());
+  function findHeaderRowIndex(rows) {
+    let best = { index: 0, score: -1 };
+    const limit = Math.min(rows.length, 40);
+    for (let i = 0; i < limit; i++) {
+      const row = rows[i] || [];
+      const days = Object.keys(findDayColumns(row)).length;
+      const joined = row.map(normalizeText).join(' | ').toLowerCase();
+      let score = days * 10;
+      if (/описан|назван.*задач|назван.*проект/.test(joined)) score += 5;
+      if (/трудозатрат|окончание|начало/.test(joined)) score += 2;
+      if (score > best.score) best = { index: i, score };
+    }
+    return best.score > 0 ? best.index : 0;
+  }
+
+  function findColumn(headerRow, patterns) {
+    for (let i = 0; i < headerRow.length; i++) {
+      const text = normalizeText(headerRow[i]).toLowerCase();
+      if (!text) continue;
+      if (patterns.some((re) => re.test(text))) return i;
+    }
+    return -1;
+  }
+
+  function detectStatusColumn(rows, headerIndex, taskCol) {
+    const header = rows[headerIndex] || [];
+    const byHeader = findColumn(header, [/флаж/i, /установлен/i, /статус.*строк/i, /^статус$/i]);
+    if (byHeader >= 0) return byHeader;
+
+    const counts = new Map();
+    for (let r = headerIndex + 1; r < Math.min(rows.length, headerIndex + 80); r++) {
+      const row = rows[r] || [];
+      const limit = Math.min(row.length, 6);
+      for (let c = 0; c < limit; c++) {
+        if (c === taskCol) continue;
+        const value = normalizeText(row[c]).toLowerCase();
+        if (!value) continue;
+        if (/установлен|снят/.test(value) || value === 'true' || value === 'false') {
+          counts.set(c, (counts.get(c) || 0) + 1);
+        }
+      }
+    }
+    let bestCol = 0;
+    let bestCount = -1;
+    counts.forEach((count, col) => {
+      if (count > bestCount) {
+        bestCount = count;
+        bestCol = col;
+      }
+    });
+    return bestCount > 0 ? bestCol : 0;
+  }
+
+  function isActiveTaskStatus(value) {
+    if (value === true || value === 1) return true;
+    const text = normalizeText(value).toLowerCase();
+    if (!text) return false;
+    if (text === 'true' || text === '1' || text === 'yes' || text === 'да') return true;
+    return text.includes('установлен');
+  }
+
+  function isInactiveStatus(value) {
+    if (value === false || value === 0) return true;
+    const text = normalizeText(value).toLowerCase();
+    if (!text) return false;
+    if (text === 'false' || text === '0' || text === 'no' || text === 'нет') return true;
+    return text.includes('снят');
+  }
+
+  function isProjectHeaderName(taskName) {
+    return /^название проекта\s*:/i.test(normalizeText(taskName));
   }
 
   function isAdminProject(projectName) {
-    const name = String(projectName || '').trim();
-    return !name || /^Административн/i.test(name);
+    const name = normalizeText(projectName);
+    return !name || /^административн/i.test(name);
+  }
+
+  function cell(row, index) {
+    if (index == null || index < 0) return '';
+    return row[index];
   }
 
   function parseScheduleRows(rows) {
-    if (!rows || !rows.length) return { tasks: [], weekHint: '', error: 'Пустой файл' };
+    if (!rows || !rows.length) return { tasks: [], weekHint: '', error: 'Пустой файл', seenStatuses: [] };
 
-    const header = rows[0] || [];
+    const headerIndex = findHeaderRowIndex(rows);
+    const header = rows[headerIndex] || [];
     const dayCols = findDayColumns(header);
     if (!Object.keys(dayCols).length) {
-      return { tasks: [], weekHint: '', error: 'Не найдены колонки дней (Пн–Пт)' };
+      return {
+        tasks: [],
+        weekHint: '',
+        error: 'Не найдены колонки дней (Пн–Пт). Проверьте, что это выгрузка расписания.',
+        seenStatuses: [],
+      };
     }
+
+    const taskCol = (() => {
+      const idx = findColumn(header, [/описан.*задач/i, /название задачи/i, /^название$/i]);
+      return idx >= 0 ? idx : 1;
+    })();
+    const projectCol = (() => {
+      const idx = findColumn(header, [/название проекта/i, /^проект$/i]);
+      return idx >= 0 ? idx : 2;
+    })();
+    const noteCol = (() => {
+      const idx = findColumn(header, [/^примечание/i, /^комментари/i]);
+      return idx >= 0 ? idx : 4;
+    })();
+    const billingCol = (() => {
+      const idx = findColumn(header, [/категория выставления/i, /выставлен.*счет/i, /^категория$/i]);
+      return idx >= 0 ? idx : 5;
+    })();
+    const statusCol = detectStatusColumn(rows, headerIndex, taskCol);
 
     const weekHint = DAY_KEYS
       .filter((d) => dayCols[d] != null)
-      .map((d) => String(header[dayCols[d]] || '').trim())
+      .map((d) => normalizeText(header[dayCols[d]]))
       .filter(Boolean)
       .join(' · ');
 
     const tasks = [];
-    for (let r = 1; r < rows.length; r++) {
+    const seenStatuses = [];
+    for (let r = headerIndex + 1; r < rows.length; r++) {
       const row = rows[r] || [];
-      const status = String(row[0] || '').trim();
-      const taskName = String(row[1] || '').trim();
-      const projectName = String(row[2] || '').trim();
-      const note = String(row[4] || '').trim();
-      const billing = String(row[5] || '').trim();
+      const statusRaw = cell(row, statusCol);
+      const status = normalizeText(statusRaw);
+      const taskName = normalizeText(cell(row, taskCol));
+      const projectName = normalizeText(cell(row, projectCol));
+      const note = normalizeText(cell(row, noteCol));
+      const billing = normalizeText(cell(row, billingCol));
 
-      if (status !== 'Установлен') continue;
+      if (status && seenStatuses.length < 12 && !seenStatuses.includes(status)) {
+        seenStatuses.push(status);
+      }
+
       if (!taskName) continue;
-      if (/^Общие трудозатраты/i.test(projectName) || /^Общие трудозатраты/i.test(taskName)) continue;
-      if (isProjectHeaderRow(status, taskName)) continue;
+      if (/^общие трудозатраты/i.test(projectName) || /^общие трудозатраты/i.test(taskName)) continue;
+      if (isProjectHeaderName(taskName)) continue;
+      if (isInactiveStatus(statusRaw)) continue;
 
+      // Prefer explicit "Установлен", but also keep rows with empty status
+      // if they look like real tasks (have project / hours).
       const hours = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
       let total = 0;
       DAY_KEYS.forEach((day) => {
         const idx = dayCols[day];
-        const value = idx == null ? 0 : parseHours(row[idx]);
+        const value = idx == null ? 0 : parseHours(cell(row, idx));
         hours[day] = value;
         total += value;
       });
+
+      const active = isActiveTaskStatus(statusRaw);
+      const looksLikeTask = Boolean(projectName) || total > 0;
+      if (!active && !(status === '' && looksLikeTask)) continue;
 
       const admin = isAdminProject(projectName);
       tasks.push({
@@ -101,21 +219,46 @@
       });
     }
 
-    return { tasks, weekHint, error: tasks.length ? '' : 'В файле нет строк задач (статус «Установлен»)' };
+    let error = '';
+    if (!tasks.length) {
+      const statusHint = seenStatuses.length
+        ? ` Найдены значения в колонке статуса: ${seenStatuses.slice(0, 6).join(', ')}.`
+        : '';
+      error = `В файле нет строк задач (ожидался статус «Установлен»).${statusHint}`;
+    }
+
+    return { tasks, weekHint, error, seenStatuses, headerIndex, statusCol, taskCol };
+  }
+
+  function parseSheet(workbook, sheetName) {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) return { tasks: [], weekHint: '', error: 'Лист не найден', sheetName };
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false, blankrows: false });
+    const parsed = parseScheduleRows(rows);
+    parsed.sheetName = sheetName;
+    return parsed;
   }
 
   function parseArrayBuffer(buffer) {
     if (typeof XLSX === 'undefined') {
       throw new Error('Библиотека XLSX не загружена');
     }
-    const workbook = XLSX.read(buffer, { type: 'array' });
-    const sheetName = workbook.SheetNames[0];
-    if (!sheetName) return { tasks: [], weekHint: '', error: 'В книге нет листов' };
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
-    const parsed = parseScheduleRows(rows);
-    parsed.sheetName = sheetName;
-    return parsed;
+    const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+    if (!workbook.SheetNames.length) {
+      return { tasks: [], weekHint: '', error: 'В книге нет листов' };
+    }
+
+    let best = null;
+    workbook.SheetNames.forEach((name) => {
+      const parsed = parseSheet(workbook, name);
+      if (!best) {
+        best = parsed;
+        return;
+      }
+      if ((parsed.tasks || []).length > (best.tasks || []).length) best = parsed;
+      else if (!(best.tasks || []).length && !parsed.error && best.error) best = parsed;
+    });
+    return best || { tasks: [], weekHint: '', error: 'Не удалось разобрать файл' };
   }
 
   async function parseFile(file) {
