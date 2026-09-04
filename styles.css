@@ -825,11 +825,14 @@ body {
 
 .completion-panel {
   margin-bottom: 24px;
-  padding: 18px 20px;
+  padding: 14px 20px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
 .completion-panel__head {
@@ -888,23 +891,34 @@ body {
 
 .completion-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
 }
 
 .completion-item {
   display: grid;
-  grid-template-columns: 28px 1fr;
+  grid-template-columns: 16px 20px 1fr;
   align-items: center;
-  column-gap: 10px;
-  row-gap: 2px;
-  padding: 10px 12px;
+  column-gap: 8px;
+  row-gap: 0;
+  padding: 6px 10px;
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-elevated);
   cursor: pointer;
   transition: border-color var(--transition), background var(--transition);
+}
+
+.completion-item__checkbox {
+  grid-row: span 2;
+  justify-self: center;
+  align-self: center;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
 }
 
 .completion-item:hover {
@@ -945,10 +959,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
@@ -965,16 +979,22 @@ body {
 
 .completion-item__name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   min-width: 0;
   overflow-wrap: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .completion-item__meta {
   color: var(--text-faint);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   min-width: 0;
   overflow-wrap: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .completion-item__remove {
@@ -1431,6 +1451,15 @@ textarea.cell-input {
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: box-shadow var(--transition);
+}
+
+.user-section--flash {
+  animation: user-section-flash 1.2s ease;
+}
+
+@keyframes user-section-flash {
+  0%, 15% { box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+  100% { box-shadow: var(--shadow-sm); border-color: var(--border); }
 }
 
 .user-section:hover {

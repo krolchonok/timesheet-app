@@ -122,6 +122,34 @@ function togglePersonVisibility(name) {
   render();
 }
 
+function scrollToPerson(person) {
+  const key = String(person.id || person.name);
+  const wasHidden = !isPersonVisible(person.name);
+  if (wasHidden) {
+    hiddenPeople.delete(person.name);
+    renderCompletion();
+    render();
+  }
+
+  requestAnimationFrame(() => {
+    const section = [...usersListEl.querySelectorAll('.user-section')]
+      .find((el) => el.dataset.personId === key);
+    if (!section) return;
+
+    section.classList.remove('user-section--collapsed');
+
+    const panelHeight = panelView.classList.contains('hidden') ? 0 : panelView.offsetHeight;
+    const targetTop = section.getBoundingClientRect().top + window.scrollY - panelHeight - 16;
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+
+    section.classList.remove('user-section--flash');
+    // restart the animation even if it's still playing from a previous click
+    void section.offsetWidth;
+    section.classList.add('user-section--flash');
+    setTimeout(() => section.classList.remove('user-section--flash'), 1200);
+  });
+}
+
 function matchesSearch(row, personName, query) {
   if (!query) return true;
   const haystack = [
@@ -175,6 +203,7 @@ function renderCompletion() {
 
   completion.people.forEach((person) => {
     const item = completionItemTemplate.content.cloneNode(true).querySelector('.completion-item');
+    const checkboxEl = item.querySelector('.completion-item__checkbox');
     const statusEl = item.querySelector('.completion-item__status');
     const nameEl = item.querySelector('.completion-item__name');
     const metaEl = item.querySelector('.completion-item__meta');
@@ -186,8 +215,12 @@ function renderCompletion() {
     item.classList.toggle('completion-item--hidden', !visible);
     item.setAttribute('aria-pressed', visible ? 'true' : 'false');
 
+    checkboxEl.checked = visible;
+    checkboxEl.title = visible ? 'Скрыть из списка' : 'Показать в списке';
+
     statusEl.textContent = person.filled ? '✓' : '—';
     nameEl.textContent = person.name;
+    nameEl.title = person.name;
 
     const meta = person.filled
       ? `Проект ${formatHours(person.project_hours)} + задачи ${formatHours(person.report_hours)} = ${formatHours(person.total_hours)} / ${person.hours_norm} ч`
@@ -195,9 +228,15 @@ function renderCompletion() {
         ? `Проект ${formatHours(person.project_hours)} + задачи ${formatHours(person.report_hours)} = ${formatHours(person.total_hours)} / ${person.hours_norm} ч`
         : `0 / ${person.hours_norm} ч`;
     metaEl.textContent = visible ? meta : 'Скрыт';
+    metaEl.title = metaEl.textContent;
+
+    checkboxEl.addEventListener('click', (e) => e.stopPropagation());
+    checkboxEl.addEventListener('change', () => {
+      togglePersonVisibility(person.name);
+    });
 
     item.addEventListener('click', () => {
-      togglePersonVisibility(person.name);
+      scrollToPerson(person);
     });
 
     completionListEl.appendChild(item);
