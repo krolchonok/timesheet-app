@@ -6,6 +6,7 @@
   <title>Таблица задач — MS Project</title>
   <script>(function(){try{var d="__UI_THEME_DEFAULT__";var t=localStorage.getItem('timesheet-theme')||d;if(t&&t!=='default')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="new.css">
 </head>
 <body>
   <div class="app">
@@ -31,6 +32,7 @@
       </div>
       <div class="header__actions">
         <button type="button" class="btn btn--secondary" id="btn-export" disabled>Экспорт CSV</button>
+        <button type="button" class="btn btn--secondary" id="btn-import-schedule" disabled>Импорт Excel</button>
         <button type="button" class="btn btn--secondary" id="btn-add-downtime" disabled>+ Простой</button>
         <div class="popover-wrap">
           <button type="button" class="btn btn--secondary" id="btn-vacation" disabled>Отпуск</button>
@@ -63,6 +65,7 @@
             </div>
           </div>
         </div>
+        <a href="/" class="btn btn--ghost">Новый интерфейс</a>
         <a href="/login" class="btn btn--ghost">Админ</a>
       </div>
     </header>
@@ -274,9 +277,13 @@
     </tr>
   </template>
 
+  <input type="file" id="schedule-file-input" class="hidden" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+
   <script src="week.js"></script>
   <script src="api.js"></script>
+  <script src="/vendor/xlsx.full.min.js"></script>
   <script src="table-resize.js"></script>
+  <script src="schedule-import.js"></script>
   <script src="app.js"></script>
   <script src="tour.js"></script>
 </body>

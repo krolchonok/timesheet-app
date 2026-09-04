@@ -399,8 +399,9 @@ function initThemeToggle(button) {
   if (!button) return;
   const render = () => {
     const active = getTheme() === 'msproject';
-    button.textContent = active ? 'Тема: MS Project' : 'Тема: обычная';
+    button.textContent = active ? 'Оформление: MS Project' : 'Оформление: обычное';
     button.setAttribute('aria-pressed', String(active));
+    button.title = 'Только внешний вид таблиц и цветов, без смены функций';
   };
   render();
   button.addEventListener('click', () => {
