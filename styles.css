@@ -1368,41 +1368,197 @@ body.col-resizing * {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   white-space: nowrap;
   vertical-align: middle;
 }
 
 .row-drag-handle {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  grid-template-columns: repeat(3, 3px);
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 22px;
+  margin: 0;
+  padding: 0 2px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
   cursor: grab;
+  color: inherit;
+  opacity: 0.45;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.row-drag-handle span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
   color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: -0.12em;
-  line-height: 1;
-  user-select: none;
-  opacity: 0.55;
+  box-shadow: 0 5px 0 currentColor;
+  align-self: start;
+  margin-top: 2px;
 }
 
 .row-drag-handle:hover,
 .task-row:hover .row-drag-handle {
   opacity: 1;
-  color: var(--text-muted, var(--text));
+  background: color-mix(in srgb, var(--primary, #1e4d8c) 8%, transparent);
+  border-color: color-mix(in srgb, var(--primary, #1e4d8c) 18%, transparent);
+  color: var(--primary, #1e4d8c);
 }
 
-.row-drag-handle:active {
+.row-drag-handle:active,
+.is-row-dragging .row-drag-handle {
   cursor: grabbing;
 }
 
+.row-drag-handle:focus-visible {
+  outline: 2px solid var(--accent, #0e9f8e);
+  outline-offset: 1px;
+  opacity: 1;
+}
+
+body.is-row-dragging {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+body.is-row-dragging * {
+  cursor: grabbing !important;
+}
+
 .task-row--dragging {
+  position: relative;
+  opacity: 0.42;
+  background: color-mix(in srgb, var(--accent, #0e9f8e) 8%, transparent) !important;
+}
+
+.task-row--dragging td {
+  border-top: 1px dashed color-mix(in srgb, var(--accent, #0e9f8e) 55%, var(--border));
+  border-bottom: 1px dashed color-mix(in srgb, var(--accent, #0e9f8e) 55%, var(--border));
+}
+
+.task-row--dragging td:first-child {
+  border-left: 1px dashed color-mix(in srgb, var(--accent, #0e9f8e) 55%, var(--border));
+  border-radius: 8px 0 0 8px;
+}
+
+.task-row--dragging td:last-child {
+  border-right: 1px dashed color-mix(in srgb, var(--accent, #0e9f8e) 55%, var(--border));
+  border-radius: 0 8px 8px 0;
+}
+
+.task-row--drop-target {
+  background: color-mix(in srgb, var(--accent, #0e9f8e) 5%, transparent);
+}
+
+.task-row--dropped {
+  animation: row-drop-flash 0.42s ease;
+}
+
+@keyframes row-drop-flash {
+  0% { background: color-mix(in srgb, var(--accent, #0e9f8e) 22%, transparent); }
+  100% { background: transparent; }
+}
+
+.row-drop-line {
+  position: fixed;
+  z-index: 10000;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent, #0e9f8e);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent, #0e9f8e) 22%, transparent),
+    0 1px 8px color-mix(in srgb, var(--accent, #0e9f8e) 35%, transparent);
+  pointer-events: none;
+  transition: top 0.08s linear, left 0.08s linear, width 0.08s linear;
+}
+
+.row-drop-line::before,
+.row-drop-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #0e9f8e);
+  transform: translateY(-50%);
+}
+
+.row-drop-line::before { left: -2px; }
+.row-drop-line::after { right: -2px; }
+
+.row-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--primary, #1e4d8c) 28%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, #fff 92%, var(--primary, #1e4d8c));
+  box-shadow:
+    0 10px 28px rgba(20, 40, 70, 0.18),
+    0 2px 6px rgba(20, 40, 70, 0.08);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(0, 0) scale(0.98);
+  transition: opacity 0.12s ease, box-shadow 0.12s ease;
+  backdrop-filter: blur(6px);
+}
+
+.row-drag-ghost--visible {
+  opacity: 1;
+}
+
+.row-drag-ghost--exit {
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+
+.row-drag-ghost__grip {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 3px);
+  gap: 2px;
   opacity: 0.55;
+  color: var(--primary, #1e4d8c);
 }
 
-.task-row--drag-over-before {
-  box-shadow: inset 0 2px 0 0 var(--accent, #0e9f8e);
+.row-drag-ghost__grip span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 5px 0 currentColor;
+  margin-top: 2px;
 }
 
-.task-row--drag-over-after {
-  box-shadow: inset 0 -2px 0 0 var(--accent, #0e9f8e);
+.row-drag-ghost__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 600 0.92rem/1.25 var(--font);
+  color: var(--text, #1b2430);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-drag-ghost__hint {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  white-space: nowrap;
 }
 
 .cell-input {

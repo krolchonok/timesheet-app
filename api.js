@@ -442,19 +442,19 @@ function initThemeToggle(button) {
   });
 }
 
-// ── Row drag reorder ──
+// ── Row drag reorder (pointer-driven) ──
 function fillRowNumCell(cell, index) {
   if (!cell) return;
   cell.classList.add('col-num');
   cell.replaceChildren();
   const wrap = document.createElement('span');
   wrap.className = 'row-num-wrap';
-  const handle = document.createElement('span');
+  const handle = document.createElement('button');
+  handle.type = 'button';
   handle.className = 'row-drag-handle';
-  handle.draggable = true;
   handle.title = 'Перетащить';
   handle.setAttribute('aria-label', 'Перетащить строку');
-  handle.textContent = '⋮⋮';
+  handle.innerHTML = '<span></span><span></span><span></span>';
   const num = document.createElement('span');
   num.className = 'row-num';
   num.textContent = String(index + 1);
@@ -470,6 +470,77 @@ function renumberTaskRows(tbody) {
   });
 }
 
+function rowDragLabel(tr) {
+  const taskInput = tr.querySelector('.cell-input[data-field="task"]');
+  if (taskInput?.value?.trim()) return taskInput.value.trim();
+  const categoryInput = tr.querySelector('.cell-input[data-field="category"]');
+  if (categoryInput?.value?.trim()) return categoryInput.value.trim();
+  const projectName = tr.querySelector('.project-task-name')?.textContent?.trim();
+  if (projectName) return projectName;
+  const select = tr.querySelector('select[data-field="category"]');
+  if (select?.value) return select.value;
+  return 'Задача';
+}
+
+function clearRowDragUi(tbody, { keepGhost = false } = {}) {
+  document.body.classList.remove('is-row-dragging');
+  if (!keepGhost) {
+    document.querySelectorAll('.row-drag-ghost').forEach((el) => el.remove());
+  }
+  document.querySelectorAll('.row-drop-line').forEach((el) => el.remove());
+  tbody?.querySelectorAll('.task-row--dragging, .task-row--drop-target').forEach((el) => {
+    el.classList.remove('task-row--dragging', 'task-row--drop-target');
+  });
+}
+
+function placeDropLine(tbody, dragging, beforeEl) {
+  let line = document.querySelector('.row-drop-line');
+  if (!line) {
+    line = document.createElement('div');
+    line.className = 'row-drop-line';
+    document.body.appendChild(line);
+  }
+
+  const table = tbody.closest('table') || tbody;
+  const tableRect = table.getBoundingClientRect();
+  let y;
+  if (beforeEl) {
+    y = beforeEl.getBoundingClientRect().top;
+  } else {
+    const rows = [...tbody.querySelectorAll('tr[data-id]')].filter((row) => row !== dragging);
+    const last = rows[rows.length - 1];
+    y = last ? last.getBoundingClientRect().bottom : tableRect.bottom;
+  }
+  line.style.left = `${tableRect.left + 8}px`;
+  line.style.width = `${Math.max(80, tableRect.width - 16)}px`;
+  line.style.top = `${y - 1}px`;
+  line.hidden = false;
+}
+
+function moveRowDragGhost(ghost, clientX, clientY) {
+  if (!ghost) return;
+  ghost.style.transform = `translate(${clientX - ghost._offsetX}px, ${clientY - ghost._offsetY}px)`;
+}
+
+function createRowDragGhost(tr, clientX, clientY) {
+  const rect = tr.getBoundingClientRect();
+  const ghost = document.createElement('div');
+  ghost.className = 'row-drag-ghost';
+  ghost.innerHTML = `
+    <span class="row-drag-ghost__grip" aria-hidden="true"><span></span><span></span><span></span></span>
+    <span class="row-drag-ghost__text"></span>
+    <span class="row-drag-ghost__hint">Отпустите, чтобы поставить</span>
+  `;
+  ghost.querySelector('.row-drag-ghost__text').textContent = rowDragLabel(tr);
+  ghost.style.width = `${Math.min(Math.max(rect.width * 0.55, 220), 420)}px`;
+  ghost._offsetX = 28;
+  ghost._offsetY = Math.min(24, rect.height / 2);
+  document.body.appendChild(ghost);
+  moveRowDragGhost(ghost, clientX, clientY);
+  requestAnimationFrame(() => ghost.classList.add('row-drag-ghost--visible'));
+  return ghost;
+}
+
 function bindRowDragReorder(tr, {
   getOrderedIds,
   applyLocalOrder,
@@ -480,71 +551,121 @@ function bindRowDragReorder(tr, {
   if (!handle || handle.dataset.dragBound === '1') return;
   handle.dataset.dragBound = '1';
 
-  handle.addEventListener('dragstart', (e) => {
+  const DRAG_THRESHOLD = 5;
+
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (handle.disabled) return;
+    e.preventDefault();
     e.stopPropagation();
-    tr.classList.add('task-row--dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', tr.dataset.id || '');
-    try {
-      e.dataTransfer.setDragImage(tr, 12, 12);
-    } catch (_) {
-      /* ignore */
-    }
-  });
 
-  handle.addEventListener('dragend', () => {
-    tr.classList.remove('task-row--dragging');
-    tr.parentElement?.querySelectorAll('.task-row--drag-over').forEach((el) => {
-      el.classList.remove('task-row--drag-over', 'task-row--drag-over-before', 'task-row--drag-over-after');
-    });
-  });
-
-  tr.addEventListener('dragover', (e) => {
-    const dragging = tr.parentElement?.querySelector('.task-row--dragging');
-    if (!dragging || dragging === tr) return;
-    if (canDropOn && !canDropOn(dragging, tr)) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    const rect = tr.getBoundingClientRect();
-    const before = e.clientY < rect.top + rect.height / 2;
-    tr.parentElement?.querySelectorAll('.task-row--drag-over').forEach((el) => {
-      if (el !== tr) {
-        el.classList.remove('task-row--drag-over', 'task-row--drag-over-before', 'task-row--drag-over-after');
-      }
-    });
-    tr.classList.toggle('task-row--drag-over-before', before);
-    tr.classList.toggle('task-row--drag-over-after', !before);
-    tr.classList.add('task-row--drag-over');
-  });
-
-  tr.addEventListener('dragleave', (e) => {
-    if (e.relatedTarget && tr.contains(e.relatedTarget)) return;
-    tr.classList.remove('task-row--drag-over', 'task-row--drag-over-before', 'task-row--drag-over-after');
-  });
-
-  tr.addEventListener('drop', async (e) => {
-    e.preventDefault();
     const tbody = tr.parentElement;
-    const dragging = tbody?.querySelector('.task-row--dragging');
-    tr.classList.remove('task-row--drag-over', 'task-row--drag-over-before', 'task-row--drag-over-after');
-    if (!dragging || dragging === tr || !tbody) return;
-    if (canDropOn && !canDropOn(dragging, tr)) return;
+    if (!tbody) return;
 
-    const rect = tr.getBoundingClientRect();
-    const before = e.clientY < rect.top + rect.height / 2;
-    if (before) tbody.insertBefore(dragging, tr);
-    else tbody.insertBefore(dragging, tr.nextSibling);
+    const state = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      active: false,
+      ghost: null,
+      moved: false,
+      originNext: tr.nextSibling,
+      originParent: tbody,
+    };
 
-    renumberTaskRows(tbody);
-    const orderedIds = getOrderedIds
-      ? getOrderedIds(tbody, dragging)
-      : [...tbody.querySelectorAll('tr[data-id]')].map((row) => Number(row.dataset.id));
-    applyLocalOrder?.(orderedIds);
-    try {
-      await persistOrder?.(orderedIds);
-    } catch (error) {
-      alert(`Ошибка сохранения порядка: ${error.message}`);
-    }
+    const eligibleTargets = () =>
+      [...tbody.querySelectorAll('tr[data-id]')].filter(
+        (row) => row !== tr && (!canDropOn || canDropOn(tr, row))
+      );
+
+    const updateInsert = (clientY) => {
+      const targets = eligibleTargets();
+      tbody.querySelectorAll('.task-row--drop-target').forEach((row) => {
+        row.classList.remove('task-row--drop-target');
+      });
+      if (targets.length === 0) {
+        placeDropLine(tbody, tr, null);
+        return;
+      }
+
+      let before = null;
+      for (const row of targets) {
+        const rect = row.getBoundingClientRect();
+        if (clientY < rect.top + rect.height / 2) {
+          before = row;
+          break;
+        }
+      }
+
+      const last = targets[targets.length - 1];
+      if (before) {
+        if (tr.nextSibling !== before) tbody.insertBefore(tr, before);
+      } else if (last.nextSibling !== tr) {
+        if (last.nextSibling) tbody.insertBefore(tr, last.nextSibling);
+        else tbody.appendChild(tr);
+      }
+
+      placeDropLine(tbody, tr, before);
+      renumberTaskRows(tbody);
+      const highlight = before || last;
+      if (highlight) highlight.classList.add('task-row--drop-target');
+    };
+
+    const onMove = (ev) => {
+      if (ev.pointerId !== state.pointerId) return;
+      const dx = ev.clientX - state.startX;
+      const dy = ev.clientY - state.startY;
+      if (!state.active) {
+        if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        state.active = true;
+        state.moved = true;
+        document.body.classList.add('is-row-dragging');
+        tr.classList.add('task-row--dragging');
+        state.ghost = createRowDragGhost(tr, ev.clientX, ev.clientY);
+        try {
+          handle.setPointerCapture(state.pointerId);
+        } catch (_) {
+          /* ignore */
+        }
+      }
+      moveRowDragGhost(state.ghost, ev.clientX, ev.clientY);
+      updateInsert(ev.clientY);
+    };
+
+    const finish = async (ev) => {
+      if (ev && ev.pointerId !== state.pointerId) return;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', finish);
+
+      const wasActive = state.active;
+      const ghost = state.ghost;
+      clearRowDragUi(tbody, { keepGhost: Boolean(ghost) });
+      if (ghost) {
+        ghost.classList.add('row-drag-ghost--exit');
+        setTimeout(() => ghost.remove(), 160);
+      }
+
+      if (!wasActive) return;
+
+      tr.classList.add('task-row--dropped');
+      setTimeout(() => tr.classList.remove('task-row--dropped'), 420);
+      renumberTaskRows(tbody);
+
+      const orderedIds = getOrderedIds
+        ? getOrderedIds(tbody, tr)
+        : [...tbody.querySelectorAll('tr[data-id]')].map((row) => Number(row.dataset.id));
+      applyLocalOrder?.(orderedIds);
+      try {
+        await persistOrder?.(orderedIds);
+      } catch (error) {
+        alert(`Ошибка сохранения порядка: ${error.message}`);
+      }
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', finish);
   });
 }
 
