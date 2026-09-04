@@ -33,7 +33,7 @@
   --font-mono: "DM Sans", system-ui, sans-serif;
   --transition: 0.18s ease;
 
-  --col-num: 3%;
+  --col-num: 3.6%;
   --col-fio: 10%;
   --col-category: 10%;
   --col-task: 16%;
@@ -1361,6 +1361,49 @@ body.col-resizing * {
   font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   padding: 0 4px !important;
+}
+
+.col-num {
+  vertical-align: middle;
+}
+
+.col-num .row-num {
+  display: block;
+  line-height: 1.1;
+}
+
+.row-drag-handle {
+  display: block;
+  cursor: grab;
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  letter-spacing: -0.12em;
+  line-height: 1;
+  user-select: none;
+  opacity: 0.55;
+  padding: 2px 0 0;
+}
+
+.row-drag-handle:hover,
+.task-row:hover .row-drag-handle {
+  opacity: 1;
+  color: var(--text-muted, var(--text));
+}
+
+.row-drag-handle:active {
+  cursor: grabbing;
+}
+
+.task-row--dragging {
+  opacity: 0.55;
+}
+
+.task-row--drag-over-before {
+  box-shadow: inset 0 2px 0 0 var(--accent, #0e9f8e);
+}
+
+.task-row--drag-over-after {
+  box-shadow: inset 0 -2px 0 0 var(--accent, #0e9f8e);
 }
 
 .cell-input {

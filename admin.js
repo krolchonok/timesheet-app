@@ -283,7 +283,7 @@ function bindTaskRowInputs(row, tr) {
 function renderProjectRowView(row, index, tbody) {
   const tr = rowProjectViewTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
-  tr.querySelector('.row-num').textContent = index + 1;
+  fillRowNumCell(tr.querySelector('.col-num'), index);
   tr.querySelector('.project-task-name').textContent = row.task || 'Проектные задачи';
 
   tr.querySelectorAll('.cell-input[data-field]').forEach((input) => {
@@ -296,12 +296,60 @@ function renderProjectRowView(row, index, tbody) {
   tr.querySelector('.row-total').textContent = formatHours(rowTotal(row));
   tbody.appendChild(tr);
   bindTaskRowInputs(row, tr);
+  bindAdminRowReorder(tr);
+}
+
+function applyAdminSectionOrder(orderedIds) {
+  if (!orderedIds.length) return;
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const reordered = orderedIds.map((id) => byId.get(id)).filter(Boolean);
+  if (!reordered.length) return;
+  reordered.forEach((row, index) => {
+    row.sort_order = index;
+  });
+
+  const personName = reordered[0].fio;
+  const isProject = Boolean(reordered[0].is_project);
+  const otherPeople = rows.filter((row) => row.fio !== personName);
+  const samePersonOtherType = rows.filter(
+    (row) => row.fio === personName && Boolean(row.is_project) !== isProject
+  );
+  rows = [
+    ...otherPeople,
+    ...(isProject ? reordered : samePersonOtherType),
+    ...(isProject ? samePersonOtherType : reordered),
+  ];
+}
+
+function bindAdminRowReorder(tr) {
+  bindRowDragReorder(tr, {
+    canDropOn: (dragging, target) => {
+      const dragTask = rows.find((row) => String(row.id) === dragging.dataset.id);
+      const targetTask = rows.find((row) => String(row.id) === target.dataset.id);
+      return (
+        Boolean(dragTask?.is_project) === Boolean(targetTask?.is_project) &&
+        dragTask?.fio === targetTask?.fio
+      );
+    },
+    getOrderedIds: (body, dragging) => {
+      const dragTask = rows.find((row) => String(row.id) === dragging.dataset.id);
+      const wantProject = Boolean(dragTask?.is_project);
+      return [...body.querySelectorAll('tr[data-id]')]
+        .map((row) => Number(row.dataset.id))
+        .filter((id) => {
+          const task = rows.find((item) => item.id === id);
+          return task && Boolean(task.is_project) === wantProject;
+        });
+    },
+    applyLocalOrder: (orderedIds) => applyAdminSectionOrder(orderedIds),
+    persistOrder: persistTaskOrder,
+  });
 }
 
 function renderTaskRowView(row, index, tbody) {
   const tr = rowViewTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
-  tr.querySelector('.row-num').textContent = index + 1;
+  fillRowNumCell(tr.querySelector('.col-num'), index);
   applyRowStatusClass(tr, row.status || 'new');
 
   const categoryTd = tr.querySelector('.col-category');
@@ -410,6 +458,7 @@ function renderTaskRowView(row, index, tbody) {
 
   tbody.appendChild(tr);
   bindTaskRowInputs(row, tr);
+  bindAdminRowReorder(tr);
 }
 
 function sumPersonDayTotals(tasks) {

@@ -441,3 +441,114 @@ function initThemeToggle(button) {
     refreshTextareaHeights();
   });
 }
+
+// ── Row drag reorder ──
+function fillRowNumCell(cell, index) {
+  if (!cell) return;
+  cell.classList.add('col-num');
+  cell.replaceChildren();
+  const handle = document.createElement('span');
+  handle.className = 'row-drag-handle';
+  handle.draggable = true;
+  handle.title = 'Перетащить';
+  handle.setAttribute('aria-label', 'Перетащить строку');
+  handle.textContent = '⋮⋮';
+  const num = document.createElement('span');
+  num.className = 'row-num';
+  num.textContent = String(index + 1);
+  cell.append(handle, num);
+}
+
+function renumberTaskRows(tbody) {
+  if (!tbody) return;
+  [...tbody.querySelectorAll('tr[data-id]')].forEach((tr, index) => {
+    const num = tr.querySelector('.row-num');
+    if (num) num.textContent = String(index + 1);
+  });
+}
+
+function bindRowDragReorder(tr, {
+  getOrderedIds,
+  applyLocalOrder,
+  persistOrder,
+  canDropOn,
+}) {
+  const handle = tr.querySelector('.row-drag-handle');
+  if (!handle || handle.dataset.dragBound === '1') return;
+  handle.dataset.dragBound = '1';
+
+  handle.addEventListener('dragstart', (e) => {
+    e.stopPropagation();
+    tr.classList.add('task-row--dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tr.dataset.id || '');
+    try {
+      e.dataTransfer.setDragImage(tr, 12, 12);
+    } catch (_) {
+      /* ignore */
+    }
+  });
+
+  handle.addEventListener('dragend', () => {
+    tr.classList.remove('task-row--dragging');
+    tr.parentElement?.querySelectorAll('.task-row--drag-over').forEach((el) => {
+      el.classList.remove('task-row--drag-over', 'task-row--drag-over-before', 'task-row--drag-over-after');
+    });
+  });
+
+  tr.addEventListener('dragover', (e) => {
+    const dragging = tr.parentElement?.querySelector('.task-row--dragging');
+    if (!dragging || dragging === tr) return;
+    if (canDropOn && !canDropOn(dragging, tr)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = tr.getBoundingClientRect();
+    const before = e.clientY < rect.top + rect.height / 2;
+    tr.parentElement?.querySelectorAll('.task-row--drag-over').forEach((el) => {
+      if (el !== tr) {
+        el.classList.remove('task-row--drag-over', 'task-row--drag-over-before', 'task-row--drag-over-after');
+      }
+    });
+    tr.classList.toggle('task-row--drag-over-before', before);
+    tr.classList.toggle('task-row--drag-over-after', !before);
+    tr.classList.add('task-row--drag-over');
+  });
+
+  tr.addEventListener('dragleave', (e) => {
+    if (e.relatedTarget && tr.contains(e.relatedTarget)) return;
+    tr.classList.remove('task-row--drag-over', 'task-row--drag-over-before', 'task-row--drag-over-after');
+  });
+
+  tr.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const tbody = tr.parentElement;
+    const dragging = tbody?.querySelector('.task-row--dragging');
+    tr.classList.remove('task-row--drag-over', 'task-row--drag-over-before', 'task-row--drag-over-after');
+    if (!dragging || dragging === tr || !tbody) return;
+    if (canDropOn && !canDropOn(dragging, tr)) return;
+
+    const rect = tr.getBoundingClientRect();
+    const before = e.clientY < rect.top + rect.height / 2;
+    if (before) tbody.insertBefore(dragging, tr);
+    else tbody.insertBefore(dragging, tr.nextSibling);
+
+    renumberTaskRows(tbody);
+    const orderedIds = getOrderedIds
+      ? getOrderedIds(tbody, dragging)
+      : [...tbody.querySelectorAll('tr[data-id]')].map((row) => Number(row.dataset.id));
+    applyLocalOrder?.(orderedIds);
+    try {
+      await persistOrder?.(orderedIds);
+    } catch (error) {
+      alert(`Ошибка сохранения порядка: ${error.message}`);
+    }
+  });
+}
+
+async function persistTaskOrder(orderedIds) {
+  if (!orderedIds || orderedIds.length === 0) return;
+  await api('/api/tasks/reorder', {
+    method: 'PUT',
+    body: JSON.stringify({ ordered_ids: orderedIds }),
+  });
+}

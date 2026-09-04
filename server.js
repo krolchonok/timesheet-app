@@ -165,6 +165,28 @@ function migrateDb() {
   if (!columnExists('tasks', 'status')) {
     db.exec(`ALTER TABLE tasks ADD COLUMN status TEXT NOT NULL DEFAULT '${DEFAULT_TASK_STATUS}'`);
   }
+
+  if (!columnExists('tasks', 'sort_order')) {
+    db.exec('ALTER TABLE tasks ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0');
+    const groups = db.prepare(`
+      SELECT week_start, fio, is_project
+      FROM tasks
+      GROUP BY week_start, fio, is_project
+    `).all();
+    const listStmt = db.prepare(`
+      SELECT id FROM tasks
+      WHERE week_start = ? AND fio = ? AND is_project = ?
+      ORDER BY task COLLATE NOCASE, updated_at DESC, id DESC
+    `);
+    const updateStmt = db.prepare('UPDATE tasks SET sort_order = ? WHERE id = ?');
+    const backfill = db.transaction(() => {
+      for (const group of groups) {
+        const ids = listStmt.all(group.week_start, group.fio, group.is_project);
+        ids.forEach((row, index) => updateStmt.run(index, row.id));
+      }
+    });
+    backfill();
+  }
 }
 
 function seedTaskCategories() {
@@ -422,6 +444,15 @@ function getTask(taskId) {
   `).get(taskId);
 }
 
+function nextTaskSortOrder(weekStart, fio, isProject) {
+  const row = db.prepare(`
+    SELECT COALESCE(MAX(sort_order), -1) AS max_order
+    FROM tasks
+    WHERE week_start = ? AND fio = ? AND is_project = ?
+  `).get(weekStart, fio, isProject ? 1 : 0);
+  return Number(row.max_order) + 1;
+}
+
 function canAccessTask(user, taskRow) {
   if (user && user.role === 'admin') return true;
   if (user && user.role !== 'public' && taskRow.user_id === user.id) return true;
@@ -489,7 +520,7 @@ app.get('/api/tasks', (req, res) => {
       query += ' AND tasks.fio = ?';
       params.push(fio);
     }
-    query += ' ORDER BY tasks.is_project DESC, tasks.task COLLATE NOCASE, tasks.updated_at DESC, tasks.id DESC';
+    query += ' ORDER BY tasks.is_project DESC, tasks.sort_order ASC, tasks.id ASC';
     rows = db.prepare(query).all(...params);
   } else {
     if (!fio) return res.json({ tasks: [], progress: hoursProgress(0) });
@@ -501,11 +532,53 @@ app.get('/api/tasks', (req, res) => {
       FROM tasks
       JOIN users ON users.id = tasks.user_id
       WHERE tasks.week_start = ? AND tasks.fio = ?
-      ORDER BY tasks.is_project DESC, tasks.task COLLATE NOCASE, tasks.updated_at DESC, tasks.id DESC
+      ORDER BY tasks.is_project DESC, tasks.sort_order ASC, tasks.id ASC
     `).all(week, fio);
   }
   const tasks = rows.map(taskRowToDict);
   res.json({ tasks, progress: progressWithBreakdown(tasks) });
+});
+
+app.put('/api/tasks/reorder', (req, res) => {
+  const user = currentUser(req);
+  const orderedIds = Array.isArray(req.body?.ordered_ids)
+    ? req.body.ordered_ids.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id))
+    : [];
+  if (orderedIds.length === 0) {
+    return res.status(400).json({ error: 'Укажите ordered_ids' });
+  }
+
+  const tasks = orderedIds.map((id) => getTask(id));
+  if (tasks.some((task) => !task)) {
+    return res.status(404).json({ error: 'Задача не найдена' });
+  }
+
+  const weekStart = tasks[0].week_start;
+  const fio = tasks[0].fio;
+  const isProject = tasks[0].is_project ? 1 : 0;
+  const sameGroup = tasks.every(
+    (task) =>
+      task.week_start === weekStart &&
+      task.fio === fio &&
+      (task.is_project ? 1 : 0) === isProject
+  );
+  if (!sameGroup) {
+    return res.status(400).json({ error: 'Можно менять порядок только внутри одной группы задач' });
+  }
+
+  for (const task of tasks) {
+    if (!canAccessTask(user, task)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+  }
+
+  const update = db.prepare('UPDATE tasks SET sort_order = ?, updated_at = ? WHERE id = ?');
+  const now = utcNow();
+  const apply = db.transaction((ids) => {
+    ids.forEach((id, index) => update.run(index, now, id));
+  });
+  apply(orderedIds);
+  res.json({ ok: true });
 });
 
 app.get('/api/weeks', (req, res) => {
@@ -541,12 +614,13 @@ app.post('/api/tasks', (req, res) => {
   }
 
   const isProjectFlag = body.is_project ? 1 : 0;
+  const sortOrder = nextTaskSortOrder(payload.week_start, payload.fio, isProjectFlag);
 
   const cur = db.prepare(`
     INSERT INTO tasks (
         user_id, week_start, fio, task, is_project, project_editable, category, final_task, status,
-        mon, tue, wed, thu, fri, comment, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        mon, tue, wed, thu, fri, comment, sort_order, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     targetUserId,
     payload.week_start,
@@ -562,6 +636,7 @@ app.post('/api/tasks', (req, res) => {
     payload.thu,
     payload.fri,
     payload.comment,
+    sortOrder,
     now,
     now
   );
@@ -611,16 +686,20 @@ app.put('/api/tasks/:taskId', (req, res) => {
 
   let isProject = row.is_project ? 1 : 0;
   let projectEditable = row.project_editable ? 1 : 0;
+  let sortOrder = Number(row.sort_order) || 0;
   if ('is_project' in payload && !(row.is_project && !row.project_editable)) {
     isProject = payload.is_project ? 1 : 0;
     // Converted / toggled project rows are always employee-editable.
     projectEditable = isProject ? 1 : 0;
+    if (isProject !== (row.is_project ? 1 : 0)) {
+      sortOrder = nextTaskSortOrder(weekStart, fio, isProject);
+    }
   }
 
   db.prepare(`
     UPDATE tasks
     SET fio = ?, task = ?, is_project = ?, project_editable = ?, category = ?, final_task = ?, status = ?,
-        mon = ?, tue = ?, wed = ?, thu = ?, fri = ?, comment = ?, week_start = ?, updated_at = ?
+        mon = ?, tue = ?, wed = ?, thu = ?, fri = ?, comment = ?, week_start = ?, sort_order = ?, updated_at = ?
     WHERE id = ?
   `).run(
     fio,
@@ -637,6 +716,7 @@ app.put('/api/tasks/:taskId', (req, res) => {
     parsed.fri,
     parsed.comment,
     weekStart,
+    sortOrder,
     now,
     taskId
   );
@@ -674,11 +754,12 @@ app.post('/api/tasks/:taskId/copy', (req, res) => {
 
   const weekStart = parseWeekStart(payload.week_start || row.week_start);
   const now = utcNow();
+  const sortOrder = nextTaskSortOrder(weekStart, row.fio, row.is_project ? 1 : 0);
   const cur = db.prepare(`
     INSERT INTO tasks (
         user_id, week_start, fio, task, is_project, project_editable, category, final_task, status,
-        mon, tue, wed, thu, fri, comment, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        mon, tue, wed, thu, fri, comment, sort_order, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     targetUserId,
     weekStart,
@@ -694,6 +775,7 @@ app.post('/api/tasks/:taskId/copy', (req, res) => {
     row.thu,
     row.fri,
     row.comment,
+    sortOrder,
     now,
     now
   );

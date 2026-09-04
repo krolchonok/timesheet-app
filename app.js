@@ -172,10 +172,28 @@ async function convertTaskType(row) {
   }
 }
 
+function applyGroupOrder(orderedIds, isProject) {
+  const idSet = new Set(orderedIds);
+  const byId = new Map(rows.filter((row) => idSet.has(row.id)).map((row) => [row.id, row]));
+  const reordered = orderedIds.map((id) => byId.get(id)).filter(Boolean);
+  reordered.forEach((row, index) => {
+    row.sort_order = index;
+  });
+  const rest = rows.filter((row) => Boolean(row.is_project) !== isProject);
+  rows = isProject ? [...reordered, ...rest] : [...rest, ...reordered];
+}
+
+function bindTaskRowReorder(tr, isProject) {
+  bindRowDragReorder(tr, {
+    applyLocalOrder: (orderedIds) => applyGroupOrder(orderedIds, isProject),
+    persistOrder: persistTaskOrder,
+  });
+}
+
 function renderProjectRow(row, index, tbodyEl) {
   const tr = projectRowTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
-  tr.querySelector('.row-num').textContent = index + 1;
+  fillRowNumCell(tr.querySelector('.col-num'), index);
 
   const categoryCell = tr.querySelector('.col-category');
   const taskCell = tr.querySelector('.col-task');
@@ -222,13 +240,14 @@ function renderProjectRow(row, index, tbodyEl) {
   }
 
   bindRowInputs(row, tr, !!row.project_editable);
+  bindTaskRowReorder(tr, true);
   tbodyEl.appendChild(tr);
 }
 
 function renderCustomRow(row, index, tbodyEl) {
   const tr = rowTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
-  tr.querySelector('.row-num').textContent = index + 1;
+  fillRowNumCell(tr.querySelector('.col-num'), index);
   applyRowStatusClass(tr, row.status || 'new');
 
   const categorySelect = tr.querySelector('[data-field="category"]');
@@ -255,6 +274,7 @@ function renderCustomRow(row, index, tbodyEl) {
   actions.replaceChildren(makeConvertTypeButton(row));
   if (deleteBtn) actions.appendChild(deleteBtn);
   bindRowInputs(row, tr, true);
+  bindTaskRowReorder(tr, false);
 }
 
 function render() {
