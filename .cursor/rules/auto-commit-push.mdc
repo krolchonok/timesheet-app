@@ -1,0 +1,16 @@
+---
+description: After meaningful code changes, commit and push to origin for prod deploys
+alwaysApply: true
+---
+
+# Auto commit + push
+
+When finishing a task that changes project files in this repo, always create a git commit and `git push` to `origin` without waiting for the user to ask.
+
+Why: production is updated from the remote; unpushed work cannot be deployed.
+
+Notes:
+- Follow the existing commit message style in this repo.
+- Do not commit secrets, `.env`, or SQLite `*.db-shm` / `*.db-wal`.
+- If there is nothing to commit, skip quietly.
+- Still ask before force-push or other destructive git operations.
