@@ -219,8 +219,9 @@
       closeModal();
       return;
     }
-    const key = e.key?.toLowerCase();
-    if (key === 'm' && (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
+    // e.code = физическая клавиша (KeyM), работает и на русской раскладке (ь)
+    const isMKey = e.code === 'KeyM' || e.key?.toLowerCase() === 'm' || e.key?.toLowerCase() === 'ь';
+    if (isMKey && (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
       const tag = e.target?.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
       e.preventDefault();
