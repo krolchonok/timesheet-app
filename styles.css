@@ -33,7 +33,7 @@
   --font-mono: "DM Sans", system-ui, sans-serif;
   --transition: 0.18s ease;
 
-  --col-drag: 18px;
+  --col-drag: 16px;
   --col-num: 3%;
   --col-fio: 10%;
   --col-category: 10%;
@@ -1228,9 +1228,9 @@ body {
 }
 
 .task-table--project .col-drag {
-  width: var(--col-drag);
-  min-width: 18px;
-  max-width: 20px;
+  width: 16px;
+  min-width: 16px;
+  max-width: 16px;
 }
 
 .task-table--project .col-num {
@@ -1282,14 +1282,29 @@ body {
   pointer-events: none !important;
 }
 
+.task-table > colgroup > col.col-drag {
+  width: 16px;
+}
+
+.task-table th.col-drag,
+.task-table td.col-drag,
 .col-drag {
-  width: var(--col-drag);
-  min-width: 18px;
-  max-width: 20px;
+  width: 16px;
+  min-width: 16px;
+  max-width: 16px;
   text-align: center;
   vertical-align: middle;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.task-table thead th.col-drag {
+  padding: 11px 0 !important;
+  letter-spacing: 0;
+  font-size: 0;
+  color: transparent;
 }
 
 .col-num {
@@ -1390,19 +1405,20 @@ body.col-resizing * {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  width: 14px;
-  height: 18px;
-  margin: 0 auto;
+  gap: 1px;
+  width: 12px;
+  height: 16px;
+  margin: 0;
   padding: 0;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  border: none;
+  border-radius: 3px;
   background: transparent;
   cursor: grab;
   color: var(--text-faint);
-  opacity: 0.45;
+  opacity: 0.4;
   line-height: 0;
-  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  vertical-align: middle;
+  transition: opacity 0.15s ease, background 0.15s ease;
 }
 
 .row-drag-handle span {
@@ -1417,8 +1433,7 @@ body.col-resizing * {
 .row-drag-handle:hover,
 .task-row:hover .row-drag-handle {
   opacity: 1;
-  background: color-mix(in srgb, var(--primary, #1e4d8c) 8%, transparent);
-  border-color: color-mix(in srgb, var(--primary, #1e4d8c) 18%, transparent);
+  background: color-mix(in srgb, var(--primary, #1e4d8c) 10%, transparent);
   color: var(--primary, #1e4d8c);
 }
 
