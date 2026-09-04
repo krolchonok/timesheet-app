@@ -187,6 +187,22 @@ function migrateDb() {
     });
     backfill();
   }
+
+  if (!tableExists('problem_reports')) {
+    db.exec(`
+      CREATE TABLE problem_reports (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          comment TEXT NOT NULL,
+          element_json TEXT NOT NULL DEFAULT '',
+          element_label TEXT NOT NULL DEFAULT '',
+          page_url TEXT NOT NULL DEFAULT '',
+          user_agent TEXT NOT NULL DEFAULT '',
+          fio TEXT NOT NULL DEFAULT '',
+          week_start TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL
+      );
+    `);
+  }
 }
 
 function seedTaskCategories() {
@@ -947,9 +963,101 @@ app.delete('/api/categories/:categoryId', adminRequired, (req, res) => {
   res.json({ ok: true });
 });
 
+function formatProblemTelegram(report) {
+  const lines = [
+    '⚠️ Timesheet: сообщение о проблеме',
+    '',
+    report.comment,
+    '',
+  ];
+  if (report.element_label) lines.push(`Элемент: ${report.element_label}`);
+  if (report.fio) lines.push(`ФИО: ${report.fio}`);
+  if (report.week_start) lines.push(`Неделя: ${report.week_start}`);
+  if (report.page_url) lines.push(`Страница: ${report.page_url}`);
+  lines.push(`Время: ${report.created_at}`);
+  return lines.join('\n');
+}
+
+async function notifyProblemReport(report) {
+  const token = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
+  const chatId = (process.env.TELEGRAM_CHAT_ID || '').trim();
+  if (!token || !chatId) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: formatProblemTelegram(report),
+        disable_web_page_preview: true,
+      }),
+    });
+  } catch (error) {
+    console.error('Telegram notify failed:', error.message);
+  }
+}
+
+app.post('/api/problem-reports', (req, res) => {
+  const payload = req.body || {};
+  const comment = String(payload.comment || '').trim();
+  if (!comment) return res.status(400).json({ error: 'Опишите проблему' });
+  if (comment.length > 4000) return res.status(400).json({ error: 'Слишком длинный комментарий' });
+
+  let elementJson = '';
+  let elementLabel = '';
+  if (payload.element && typeof payload.element === 'object') {
+    try {
+      elementJson = JSON.stringify(payload.element).slice(0, 8000);
+    } catch (_) {
+      elementJson = '';
+    }
+    elementLabel = String(payload.element.label || payload.element.selector || '').trim().slice(0, 500);
+  } else {
+    elementLabel = String(payload.element_label || '').trim().slice(0, 500);
+  }
+
+  const now = utcNow();
+  const cur = db.prepare(`
+    INSERT INTO problem_reports (
+      comment, element_json, element_label, page_url, user_agent, fio, week_start, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    comment,
+    elementJson,
+    elementLabel,
+    String(payload.page_url || '').trim().slice(0, 1000),
+    String(payload.user_agent || '').trim().slice(0, 500),
+    String(payload.fio || '').trim().slice(0, 200),
+    String(payload.week_start || '').trim().slice(0, 32),
+    now
+  );
+
+  const report = db.prepare('SELECT * FROM problem_reports WHERE id = ?').get(cur.lastInsertRowid);
+  notifyProblemReport(report);
+  res.status(201).json({ ok: true, id: report.id });
+});
+
+app.get('/api/problem-reports', adminRequired, (req, res) => {
+  const rows = db.prepare(`
+    SELECT id, comment, element_label, element_json, page_url, fio, week_start, created_at
+    FROM problem_reports
+    ORDER BY id DESC
+    LIMIT 200
+  `).all();
+  res.json(rows);
+});
+
+app.delete('/api/problem-reports/:reportId', adminRequired, (req, res) => {
+  const reportId = parseInt(req.params.reportId, 10);
+  const row = db.prepare('SELECT id FROM problem_reports WHERE id = ?').get(reportId);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  db.prepare('DELETE FROM problem_reports WHERE id = ?').run(reportId);
+  res.json({ ok: true });
+});
+
 // static assets: explicit allowlist only — never blanket-serve BASE_DIR
 // (that would also expose .env, data/timesheet.db, server.js, node_modules, etc.)
-const STATIC_FILES = ['styles.css', 'new.css', 'app.js', 'admin.js', 'login.js', 'api.js', 'week.js', 'table-resize.js', 'tour.js', 'new.js', 'schedule-import.js'];
+const STATIC_FILES = ['styles.css', 'new.css', 'app.js', 'admin.js', 'login.js', 'api.js', 'week.js', 'table-resize.js', 'tour.js', 'new.js', 'schedule-import.js', 'feedback.js'];
 for (const file of STATIC_FILES) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(BASE_DIR, file)));
 }

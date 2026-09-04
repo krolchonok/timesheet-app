@@ -77,6 +77,7 @@ function setAdminMode(mode) {
       taskNameTemplates = templates;
       renderTaskNameTemplateList(taskNameTemplates);
     });
+    loadProblemReports();
   } else {
     renderCompletion();
     render();
@@ -764,6 +765,65 @@ function renderTaskNameTemplateList(items) {
     });
     chip.appendChild(remove);
     el.appendChild(chip);
+  });
+}
+
+async function loadProblemReports() {
+  const el = document.getElementById('problem-reports-list');
+  if (!el) return;
+  el.textContent = 'Загрузка…';
+  try {
+    const items = await api('/api/problem-reports');
+    renderProblemReports(items);
+  } catch (error) {
+    el.textContent = `Не удалось загрузить: ${error.message}`;
+  }
+}
+
+function renderProblemReports(items) {
+  const el = document.getElementById('problem-reports-list');
+  if (!el) return;
+  el.replaceChildren();
+  if (!items.length) {
+    el.textContent = 'Пока нет сообщений';
+    return;
+  }
+  items.forEach((item) => {
+    const card = document.createElement('article');
+    card.className = 'problem-report-card';
+
+    const meta = document.createElement('div');
+    meta.className = 'problem-report-card__meta';
+    const when = item.created_at ? new Date(item.created_at).toLocaleString('ru-RU') : '';
+    meta.textContent = [when, item.fio, item.week_start].filter(Boolean).join(' · ');
+
+    const comment = document.createElement('p');
+    comment.className = 'problem-report-card__comment';
+    comment.textContent = item.comment;
+    card.append(meta, comment);
+
+    if (item.element_label) {
+      const element = document.createElement('code');
+      element.className = 'problem-report-card__element';
+      element.textContent = item.element_label;
+      card.appendChild(element);
+    }
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'btn btn--ghost btn--small';
+    remove.textContent = 'Удалить';
+    remove.addEventListener('click', async () => {
+      if (!confirm('Удалить сообщение?')) return;
+      try {
+        await api(`/api/problem-reports/${item.id}`, { method: 'DELETE' });
+        await loadProblemReports();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+    card.appendChild(remove);
+    el.appendChild(card);
   });
 }
 
