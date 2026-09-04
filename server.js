@@ -963,40 +963,6 @@ app.delete('/api/categories/:categoryId', adminRequired, (req, res) => {
   res.json({ ok: true });
 });
 
-function formatProblemTelegram(report) {
-  const lines = [
-    '⚠️ Timesheet: сообщение о проблеме',
-    '',
-    report.comment,
-    '',
-  ];
-  if (report.element_label) lines.push(`Элемент: ${report.element_label}`);
-  if (report.fio) lines.push(`ФИО: ${report.fio}`);
-  if (report.week_start) lines.push(`Неделя: ${report.week_start}`);
-  if (report.page_url) lines.push(`Страница: ${report.page_url}`);
-  lines.push(`Время: ${report.created_at}`);
-  return lines.join('\n');
-}
-
-async function notifyProblemReport(report) {
-  const token = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
-  const chatId = (process.env.TELEGRAM_CHAT_ID || '').trim();
-  if (!token || !chatId) return;
-  try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: formatProblemTelegram(report),
-        disable_web_page_preview: true,
-      }),
-    });
-  } catch (error) {
-    console.error('Telegram notify failed:', error.message);
-  }
-}
-
 app.post('/api/problem-reports', (req, res) => {
   const payload = req.body || {};
   const comment = String(payload.comment || '').trim();
@@ -1033,7 +999,6 @@ app.post('/api/problem-reports', (req, res) => {
   );
 
   const report = db.prepare('SELECT * FROM problem_reports WHERE id = ?').get(cur.lastInsertRowid);
-  notifyProblemReport(report);
   res.status(201).json({ ok: true, id: report.id });
 });
 
