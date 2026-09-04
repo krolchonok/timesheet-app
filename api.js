@@ -262,13 +262,95 @@ function exportCsv(rows, filenamePrefix = 'tasks', weekStart = '') {
   URL.revokeObjectURL(url);
 }
 
-function debounce(fn, ms = 400) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
+// Debounced per key, so editing one row can't clobber (or fire a save
+// after deleting) another row's pending save.
+function debounceByKey(fn, ms = 400) {
+  const timers = new Map();
+  const wrapped = (key, ...args) => {
+    clearTimeout(timers.get(key));
+    timers.set(key, setTimeout(() => {
+      timers.delete(key);
+      fn(key, ...args);
+    }, ms));
   };
+  wrapped.cancel = (key) => {
+    clearTimeout(timers.get(key));
+    timers.delete(key);
+  };
+  return wrapped;
 }
+
+// ── Arrow-key cell navigation ──
+// ArrowLeft/ArrowRight move focus between adjacent editable cells in the
+// same table row (wrapping to the next/previous row within the same
+// <tbody> at the row's edge). For text fields (task/comment/etc.) this
+// only kicks in once the caret is already at the start/end of the text,
+// so normal left/right editing inside a cell is untouched; hour inputs
+// and <select> cells (no text caret) switch immediately.
+function isAtFieldBoundary(el, direction) {
+  let start;
+  let end;
+  try {
+    start = el.selectionStart;
+    end = el.selectionEnd;
+  } catch (_) {
+    return true; // selection API unsupported (e.g. number input) — treat as boundary
+  }
+  if (typeof start !== 'number' || typeof end !== 'number') return true; // e.g. <select>
+  if (start !== end) return false; // an active text selection — let arrows collapse it first
+  return direction === 'left' ? start === 0 : start === String(el.value ?? '').length;
+}
+
+function focusCell(el, direction) {
+  el.focus();
+  try {
+    const pos = direction === 'left' ? String(el.value ?? '').length : 0;
+    el.setSelectionRange(pos, pos);
+  } catch (_) {
+    /* selection API unsupported — focus alone is enough */
+  }
+}
+
+function rowNavCells(tr) {
+  return Array.from(tr.querySelectorAll('.cell-input, .cell-select')).filter(
+    (el) => !el.disabled && el.offsetParent !== null
+  );
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+
+  const el = e.target;
+  if (!el || !el.matches || !el.matches('.cell-input, .cell-select')) return;
+
+  const direction = e.key === 'ArrowLeft' ? 'left' : 'right';
+  if (!isAtFieldBoundary(el, direction)) return;
+
+  const tr = el.closest('tr');
+  if (!tr) return;
+  const cells = rowNavCells(tr);
+  const idx = cells.indexOf(el);
+  if (idx === -1) return;
+
+  let target = cells[direction === 'right' ? idx + 1 : idx - 1];
+
+  if (!target) {
+    let sibling = direction === 'right' ? tr.nextElementSibling : tr.previousElementSibling;
+    while (sibling && !target) {
+      const siblingCells = rowNavCells(sibling);
+      if (siblingCells.length) {
+        target = direction === 'right' ? siblingCells[0] : siblingCells[siblingCells.length - 1];
+      } else {
+        sibling = direction === 'right' ? sibling.nextElementSibling : sibling.previousElementSibling;
+      }
+    }
+  }
+
+  if (!target) return;
+  e.preventDefault();
+  focusCell(target, direction);
+});
 
 // ── UI theme (default / msproject) ──
 // The active theme is applied as early as possible by an inline bootstrap

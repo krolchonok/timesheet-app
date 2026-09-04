@@ -91,6 +91,14 @@
         </form>
         <div id="category-list" class="project-templates"></div>
       </div>
+
+      <div class="manage-block">
+        <h3 class="manage-block__title">Настройки</h3>
+        <label class="settings-check">
+          <input type="checkbox" id="setting-allow-project-tasks">
+          <span>Разрешить создавать доп. проектные задачи (кнопка «+ Проект» у сотрудников)</span>
+        </label>
+      </div>
     </section>
 
     <div class="users-list-toolbar" id="users-list-toolbar">
@@ -100,6 +108,20 @@
 
     <div id="users-list" class="users-list"></div>
     <p class="empty-hint hidden" id="empty-hint">Задач пока нет</p>
+  </div>
+
+  <div class="modal-overlay hidden" id="project-modal-overlay">
+    <div class="modal" id="project-modal">
+      <p class="modal__title">Новая проектная задача</p>
+      <label class="modal__field">
+        <span>Название проекта</span>
+        <input type="text" id="project-name-input" placeholder="Например: Проект «Атлас»">
+      </label>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost btn--small" id="btn-project-cancel">Отмена</button>
+        <button type="button" class="btn btn--primary btn--small" id="btn-project-apply">Добавить</button>
+      </div>
+    </div>
   </div>
 
   <template id="completion-item-template">
@@ -119,11 +141,13 @@
 
   <template id="user-section-template">
     <section class="user-section">
-      <button type="button" class="user-section__header">
+      <div class="user-section__header" role="button" tabindex="0">
         <span class="user-section__toggle" aria-hidden="true">▾</span>
         <span class="user-section__name"></span>
         <span class="user-section__meta"></span>
-      </button>
+        <button type="button" class="btn btn--small btn--secondary user-section__add-task">+ Задача</button>
+        <button type="button" class="btn btn--small btn--secondary user-section__add-project hidden">+ Проект</button>
+      </div>
       <div class="user-section__body">
         <div class="table-wrap">
           <table class="task-table task-table--admin">
@@ -141,6 +165,7 @@
                 <th class="col-day" data-day="fri">Пт</th>
                 <th class="col-total">Σ</th>
                 <th class="col-comment">Комментарии</th>
+                <th class="col-actions"></th>
               </tr>
             </thead>
             <tbody class="user-task-body"></tbody>
@@ -175,6 +200,7 @@
       </td>
       <td class="col-total row-total"></td>
       <td class="col-comment cell-text">—</td>
+      <td class="col-actions"></td>
     </tr>
   </template>
 
@@ -182,10 +208,12 @@
     <tr class="task-row">
       <td class="col-num row-num"></td>
       <td class="col-category cell-text"></td>
-      <td class="col-task cell-text"></td>
+      <td class="col-task">
+        <textarea class="cell-input" data-field="task" rows="1" placeholder="Название задачи"></textarea>
+      </td>
       <td class="col-final-task">
         <div class="final-task-cell">
-          <textarea class="cell-input" data-field="final_task" rows="1" placeholder="Итоговое наименование"></textarea>
+          <textarea class="cell-input" data-field="final_task" rows="1" placeholder="Итоговое название"></textarea>
           <button type="button" class="btn btn--small btn--secondary btn-transfer" title="Перенести название задачи">→</button>
         </div>
       </td>
@@ -208,7 +236,12 @@
         <input type="number" class="cell-input cell-input--hours" data-field="fri" min="0" max="24" step="0.5" value="0">
       </td>
       <td class="col-total row-total"></td>
-      <td class="col-comment cell-text"></td>
+      <td class="col-comment">
+        <textarea class="cell-input" data-field="comment" rows="1" placeholder="Комментарий"></textarea>
+      </td>
+      <td class="col-actions">
+        <button type="button" class="btn-icon btn-delete" title="Удалить задачу" aria-label="Удалить задачу">×</button>
+      </td>
     </tr>
   </template>
 

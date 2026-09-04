@@ -23,6 +23,11 @@ const btnHideAll = document.getElementById('btn-hide-all');
 const btnExpandAll = document.getElementById('btn-expand-all');
 const btnCollapseAll = document.getElementById('btn-collapse-all');
 const usersListToolbar = document.getElementById('users-list-toolbar');
+const settingAllowProjectTasks = document.getElementById('setting-allow-project-tasks');
+const projectModalOverlay = document.getElementById('project-modal-overlay');
+const projectNameInput = document.getElementById('project-name-input');
+const btnProjectCancel = document.getElementById('btn-project-cancel');
+const btnProjectApply = document.getElementById('btn-project-apply');
 
 let rows = [];
 let completion = null;
@@ -32,6 +37,10 @@ let adminMode = 'view';
 let sectionsCollapsed = false;
 /** @type {Set<string>} hidden person names — empty set means all visible */
 let hiddenPeople = new Set();
+
+const ALLOW_PROJECT_TASKS_KEY = 'admin-allow-project-tasks';
+let allowProjectTasks = localStorage.getItem(ALLOW_PROJECT_TASKS_KEY) === '1';
+let projectModalPerson = null;
 
 const ADMIN_MODE_COPY = {
   view: {
@@ -69,7 +78,7 @@ function setAdminMode(mode) {
   }
 }
 
-const saveTaskDebounced = debounce(async (taskId, payload) => {
+const saveTaskDebounced = debounceByKey(async (taskId, payload) => {
   try {
     await api(`/api/tasks/${taskId}`, {
       method: 'PUT',
@@ -257,13 +266,21 @@ function renderTaskRowView(row, index, tbody) {
 
   const categoryTd = tr.querySelector('.col-category');
   categoryTd.classList.remove('cell-text');
-  const categorySelect = document.createElement('select');
-  categorySelect.className = 'cell-select';
-  categorySelect.dataset.field = 'category';
-  populateCategorySelect(categorySelect, categories, row.category || '');
-  categoryTd.replaceChildren(categorySelect);
-
-  tr.querySelector('.col-task.cell-text').textContent = row.task || '—';
+  if (row.is_project) {
+    const nameArea = document.createElement('textarea');
+    nameArea.className = 'cell-input';
+    nameArea.dataset.field = 'category';
+    nameArea.rows = 1;
+    nameArea.placeholder = 'Название проекта';
+    nameArea.value = row.category || '';
+    categoryTd.replaceChildren(nameArea);
+  } else {
+    const categorySelect = document.createElement('select');
+    categorySelect.className = 'cell-select';
+    categorySelect.dataset.field = 'category';
+    populateCategorySelect(categorySelect, categories, row.category || '');
+    categoryTd.replaceChildren(categorySelect);
+  }
 
   const finalInput = tr.querySelector('[data-field="final_task"]');
   finalInput.value = row.final_task || '';
@@ -273,15 +290,14 @@ function renderTaskRowView(row, index, tbody) {
 
   tr.querySelectorAll('.cell-input[data-field]').forEach((input) => {
     const field = input.dataset.field;
-    if (field === 'final_task') {
-      input.value = row.final_task || '';
+    if (field === 'task' || field === 'comment' || field === 'final_task') {
+      input.value = row[field] || '';
     } else if (DAYS.includes(field)) {
       input.value = formatHours(parseHours(row[field]));
     }
   });
 
   tr.querySelector('.row-total').textContent = formatHours(rowTotal(row));
-  tr.querySelector('.col-comment.cell-text').textContent = row.comment || '—';
 
   tr.querySelector('.btn-transfer').addEventListener('click', async () => {
     try {
@@ -295,6 +311,23 @@ function renderTaskRowView(row, index, tbody) {
       alert(`Ошибка переноса: ${error.message}`);
     }
   });
+
+  const deleteBtn = tr.querySelector('.btn-delete');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm('Удалить задачу?')) return;
+      saveTaskDebounced.cancel(row.id);
+      try {
+        await api(`/api/tasks/${row.id}`, { method: 'DELETE' });
+        rows = rows.filter((item) => item.id !== row.id);
+        completion = await api(`/api/completion?week=${encodeURIComponent(weekPicker.getWeek())}`);
+        renderCompletion();
+        render();
+      } catch (error) {
+        alert(`Ошибка удаления: ${error.message}`);
+      }
+    });
+  }
 
   tbody.appendChild(tr);
   bindTaskRowInputs(row, tr);
@@ -329,9 +362,15 @@ function renderUserSection(group, query) {
     tableWrap.classList.add('hidden');
     emptyEl.classList.remove('hidden');
   } else {
+    const lockedProjectTasks = projectTasks.filter((row) => !row.project_editable);
+    const editableProjectTasks = projectTasks.filter((row) => row.project_editable);
     let index = 0;
-    projectTasks.forEach((row) => {
+    lockedProjectTasks.forEach((row) => {
       renderProjectRowView(row, index, tbody);
+      index += 1;
+    });
+    editableProjectTasks.forEach((row) => {
+      renderTaskRowView(row, index, tbody);
       index += 1;
     });
     customTasks.forEach((row) => {
@@ -340,8 +379,43 @@ function renderUserSection(group, query) {
     });
   }
 
-  section.querySelector('.user-section__header').addEventListener('click', () => {
-    section.classList.toggle('user-section--collapsed');
+  const headerEl = section.querySelector('.user-section__header');
+  const toggleCollapse = () => section.classList.toggle('user-section--collapsed');
+  headerEl.addEventListener('click', (e) => {
+    if (e.target.closest('.user-section__add-task')) return;
+    toggleCollapse();
+  });
+  headerEl.addEventListener('keydown', (e) => {
+    if (e.target.closest('.user-section__add-task')) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleCollapse();
+    }
+  });
+
+  section.querySelector('.user-section__add-task').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const week = weekPicker.getWeek();
+    try {
+      const created = await api(`/api/tasks?week=${week}`, {
+        method: 'POST',
+        body: JSON.stringify(emptyTask(person.name, week)),
+      });
+      rows.push(created);
+      render();
+      weekPicker.refreshWeeksList();
+      const newRow = usersListEl.querySelector(`tr[data-id="${created.id}"] [data-field="task"]`);
+      if (newRow) newRow.focus();
+    } catch (error) {
+      alert(`Ошибка создания: ${error.message}`);
+    }
+  });
+
+  const addProjectBtn = section.querySelector('.user-section__add-project');
+  addProjectBtn.classList.toggle('hidden', !allowProjectTasks);
+  addProjectBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openProjectModal(person.name);
   });
 
   if (sectionsCollapsed) {
@@ -511,6 +585,58 @@ document.getElementById('btn-export').addEventListener('click', () => {
 document.getElementById('btn-logout').addEventListener('click', logout);
 searchInput.addEventListener('input', render);
 
+function openProjectModal(personName) {
+  projectModalPerson = personName;
+  projectNameInput.value = '';
+  projectModalOverlay.classList.remove('hidden');
+  projectNameInput.focus();
+}
+
+function closeProjectModal() {
+  projectModalOverlay.classList.add('hidden');
+  projectModalPerson = null;
+}
+
+btnProjectCancel.addEventListener('click', closeProjectModal);
+projectModalOverlay.addEventListener('click', (e) => {
+  if (e.target === projectModalOverlay) closeProjectModal();
+});
+
+async function submitProjectModal() {
+  const name = projectNameInput.value.trim();
+  if (!name || !projectModalPerson) return;
+  const week = weekPicker.getWeek();
+  const payload = { ...emptyTask(projectModalPerson, week), category: name, is_project: true };
+  try {
+    const created = await api(`/api/tasks?week=${week}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    rows.push(created);
+    closeProjectModal();
+    render();
+    weekPicker.refreshWeeksList();
+  } catch (error) {
+    alert(`Ошибка создания: ${error.message}`);
+  }
+}
+
+btnProjectApply.addEventListener('click', submitProjectModal);
+projectNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitProjectModal();
+  } else if (e.key === 'Escape') {
+    closeProjectModal();
+  }
+});
+
+settingAllowProjectTasks.addEventListener('change', () => {
+  allowProjectTasks = settingAllowProjectTasks.checked;
+  localStorage.setItem(ALLOW_PROJECT_TASKS_KEY, allowProjectTasks ? '1' : '0');
+  if (adminMode === 'view') render();
+});
+
 document.querySelectorAll('.admin-tabs__btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     const mode = btn.dataset.mode;
@@ -521,6 +647,7 @@ document.querySelectorAll('.admin-tabs__btn').forEach((btn) => {
 
 (async () => {
   initThemeToggle(document.getElementById('theme-toggle'));
+  settingAllowProjectTasks.checked = allowProjectTasks;
 
   const user = await requireAdminAuth();
   if (!user) return;

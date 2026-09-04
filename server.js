@@ -145,6 +145,10 @@ function migrateDb() {
     db.exec('ALTER TABLE tasks ADD COLUMN is_project INTEGER NOT NULL DEFAULT 0');
   }
 
+  if (!columnExists('tasks', 'project_editable')) {
+    db.exec('ALTER TABLE tasks ADD COLUMN project_editable INTEGER NOT NULL DEFAULT 0');
+  }
+
   if (!tableExists('task_categories')) {
     db.exec(`
       CREATE TABLE task_categories (
@@ -168,7 +172,7 @@ function migrateDb() {
 }
 
 function seedTaskCategories() {
-  const defaults = ['Автоматизация процессов', 'Административные задачи', 'Макетирование'];
+  const defaults = ['Автоматизация процессов', 'Административные задачи', 'Макетирование', 'Отпуск'];
   const stmt = db.prepare('INSERT OR IGNORE INTO task_categories (name, sort_order) VALUES (?, ?)');
   defaults.forEach((name, index) => stmt.run(name, index));
 }
@@ -182,6 +186,12 @@ function seedProjectTemplates() {
     UPDATE tasks SET is_project = 0, category = ?
     WHERE is_project = 1 AND task = ?
   `).run(ADMIN_TASK_CATEGORY, ADMIN_TASK_CATEGORY);
+
+  // Retired: the hard-coded "Проектные задачи" line is superseded by
+  // per-person project rows (project_editable). Stop generating it, and
+  // wipe out any that already exist.
+  db.prepare('UPDATE project_task_templates SET active = 0 WHERE name = ?').run('Проектные задачи');
+  db.prepare('DELETE FROM tasks WHERE is_project = 1 AND project_editable = 0').run();
 }
 
 function seedPeople() {
@@ -564,16 +574,20 @@ app.post('/api/tasks', (req, res) => {
     payload.fio = person.name;
   }
 
+  const isProjectFlag = body.is_project ? 1 : 0;
+
   const cur = db.prepare(`
     INSERT INTO tasks (
-        user_id, week_start, fio, task, is_project, category, final_task, status,
+        user_id, week_start, fio, task, is_project, project_editable, category, final_task, status,
         mon, tue, wed, thu, fri, comment, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, 0, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     targetUserId,
     payload.week_start,
     payload.fio,
     payload.task,
+    isProjectFlag,
+    isProjectFlag,
     payload.category,
     DEFAULT_TASK_STATUS,
     payload.mon,
@@ -609,13 +623,16 @@ app.put('/api/tasks/:taskId', (req, res) => {
   let finalTask = isAdmin && 'final_task' in payload ? parsed.final_task : String(row.final_task || '');
   let status = isAdmin && 'status' in payload ? parsed.status : normalizeTaskStatus(row.status);
 
-  if (row.is_project) {
+  if (row.is_project && !row.project_editable) {
+    // system/template-managed project row — name & metadata locked
     parsed.task = row.task;
     parsed.category = '';
     parsed.comment = String(row.comment || '');
     finalTask = '';
     status = DEFAULT_TASK_STATUS;
   } else if (!isAdmin) {
+    // ad hoc project row (created by admin or employee) — editable like a
+    // regular task; "category" doubles as the project name here
     const person = getActivePerson(fio);
     if (!person) return res.status(400).json({ error: 'Выберите ФИО из списка' });
     fio = person.name;
@@ -656,7 +673,7 @@ app.delete('/api/tasks/:taskId', (req, res) => {
   const row = getTask(taskId);
   if (!row) return res.status(404).json({ error: 'Not found' });
   if (!canAccessTask(user, row)) return res.status(403).json({ error: 'Forbidden' });
-  if (row.is_project && (!user || user.role !== 'admin')) {
+  if (row.is_project && !row.project_editable && (!user || user.role !== 'admin')) {
     return res.status(403).json({ error: 'Проектные задачи нельзя удалять' });
   }
 
@@ -683,15 +700,16 @@ app.post('/api/tasks/:taskId/copy', (req, res) => {
   const now = utcNow();
   const cur = db.prepare(`
     INSERT INTO tasks (
-        user_id, week_start, fio, task, is_project, category, final_task, status,
+        user_id, week_start, fio, task, is_project, project_editable, category, final_task, status,
         mon, tue, wed, thu, fri, comment, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     targetUserId,
     weekStart,
     row.fio,
     row.task,
     row.is_project,
+    row.project_editable,
     row.category,
     DEFAULT_TASK_STATUS,
     row.mon,
@@ -710,7 +728,7 @@ app.post('/api/tasks/:taskId/transfer', adminRequired, (req, res) => {
   const taskId = parseInt(req.params.taskId, 10);
   const row = getTask(taskId);
   if (!row) return res.status(404).json({ error: 'Not found' });
-  if (row.is_project) {
+  if (row.is_project && !row.project_editable) {
     return res.status(400).json({ error: 'Проектные задачи — только индикатор, перенос недоступен' });
   }
 

@@ -12,6 +12,15 @@ const grandTotalEl = document.getElementById('grand-total');
 const userBadge = document.getElementById('user-badge');
 const btnAdd = document.getElementById('btn-add');
 const btnExport = document.getElementById('btn-export');
+const btnAddDowntime = document.getElementById('btn-add-downtime');
+const btnVacation = document.getElementById('btn-vacation');
+const vacationPopover = document.getElementById('vacation-popover');
+const btnAddProject = document.getElementById('btn-add-project');
+const projectPopover = document.getElementById('project-popover');
+const projectNameInput = document.getElementById('project-name-input');
+
+const ADMIN_TASK_CATEGORY = 'Административные задачи';
+const VACATION_CATEGORY = 'Отпуск';
 const fillIndicator = document.getElementById('fill-indicator');
 const fillLabel = document.getElementById('fill-label');
 const fillBar = document.getElementById('fill-bar');
@@ -29,7 +38,7 @@ const fillElements = {
   label: fillLabel,
 };
 
-const saveTaskDebounced = debounce(async (taskId, payload) => {
+const saveTaskDebounced = debounceByKey(async (taskId, payload) => {
   try {
     await api(`/api/tasks/${taskId}`, {
       method: 'PUT',
@@ -70,6 +79,13 @@ function updatePersonUi() {
 
   btnAdd.disabled = !hasPerson;
   btnExport.disabled = !hasPerson;
+  if (btnAddDowntime) btnAddDowntime.disabled = !hasPerson;
+  if (btnVacation) btnVacation.disabled = !hasPerson;
+  if (btnAddProject) btnAddProject.disabled = !hasPerson;
+  if (!hasPerson) {
+    vacationPopover?.classList.add('hidden');
+    projectPopover?.classList.add('hidden');
+  }
   tasksLayout.classList.toggle('hidden', !hasPerson);
   fillIndicator.classList.toggle('hidden', !hasPerson);
   emptyHint.classList.toggle('hidden', hasPerson);
@@ -89,6 +105,7 @@ function bindRowInputs(row, tr, allowDelete) {
   if (allowDelete) {
     tr.querySelector('.btn-delete').addEventListener('click', async () => {
       if (!confirm('Удалить задачу?')) return;
+      saveTaskDebounced.cancel(row.id);
       try {
         await api(`/api/tasks/${row.id}`, { method: 'DELETE' });
         rows = rows.filter((item) => item.id !== row.id);
@@ -118,16 +135,49 @@ function renderProjectRow(row, index, tbodyEl) {
   const tr = projectRowTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
   tr.querySelector('.row-num').textContent = index + 1;
-  tr.querySelector('.project-task-name').textContent = row.task;
 
-  tr.querySelectorAll('.cell-input').forEach((input) => {
+  const categoryCell = tr.querySelector('.col-category');
+  const taskCell = tr.querySelector('.col-task');
+  if (row.project_editable) {
+    const nameArea = document.createElement('textarea');
+    nameArea.className = 'cell-input';
+    nameArea.dataset.field = 'category';
+    nameArea.rows = 1;
+    nameArea.placeholder = 'Название проекта';
+    nameArea.value = row.category || '';
+    categoryCell.classList.remove('cell-text');
+    categoryCell.replaceChildren(nameArea);
+
+    const taskArea = document.createElement('textarea');
+    taskArea.className = 'cell-input';
+    taskArea.dataset.field = 'task';
+    taskArea.rows = 1;
+    taskArea.placeholder = 'Название задачи';
+    taskArea.value = row.task || '';
+    taskCell.replaceChildren(taskArea);
+  } else {
+    categoryCell.textContent = row.category || '—';
+    taskCell.querySelector('.project-task-name').textContent = row.task;
+  }
+
+  tr.querySelectorAll('.cell-input[data-field]').forEach((input) => {
     const field = input.dataset.field;
     if (DAYS.includes(field)) {
       input.value = formatHours(parseHours(row[field]));
     }
   });
 
-  bindRowInputs(row, tr, false);
+  if (row.project_editable) {
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'btn-icon btn-delete';
+    deleteBtn.title = 'Удалить проект';
+    deleteBtn.setAttribute('aria-label', 'Удалить проект');
+    deleteBtn.textContent = '×';
+    tr.querySelector('.col-actions').replaceChildren(deleteBtn);
+  }
+
+  bindRowInputs(row, tr, !!row.project_editable);
   tbodyEl.appendChild(tr);
 }
 
@@ -166,7 +216,19 @@ function render() {
 
   if (!getSelectedPerson()) return;
 
-  projectRows().forEach((row, index) => renderProjectRow(row, index, projectBody));
+  const currentProjectRows = projectRows();
+  if (currentProjectRows.length === 0) {
+    const tr = document.createElement('tr');
+    tr.className = 'task-row--empty';
+    const td = document.createElement('td');
+    td.colSpan = 10;
+    td.className = 'task-row--empty-cell';
+    td.textContent = 'Проектов пока нет — добавьте кнопкой «+ Проект»';
+    tr.appendChild(td);
+    projectBody.appendChild(tr);
+  } else {
+    currentProjectRows.forEach((row, index) => renderProjectRow(row, index, projectBody));
+  }
   customRows().forEach((row, index) => renderCustomRow(row, index, tbody));
 
   updateTotals();
@@ -212,22 +274,35 @@ function onCellChange(taskId, input, tr) {
   }
 }
 
-function updateTotals() {
+function sumDayTotals(rowList) {
   const dayTotals = Object.fromEntries(DAYS.map((d) => [d, 0]));
-
-  rows.forEach((row) => {
-    if (isProjectRow(row)) return;
+  rowList.forEach((row) => {
     DAYS.forEach((day) => {
       dayTotals[day] += parseHours(row[day]);
     });
   });
+  return dayTotals;
+}
 
+function applyDayTotals(containerEl, dayTotals, grandTotalEl) {
+  if (!containerEl) return;
   DAYS.forEach((day) => {
-    const el = document.querySelector(`.day-total[data-day="${day}"]`);
+    const el = containerEl.querySelector(`.day-total[data-day="${day}"]`);
     if (el) el.textContent = formatHours(dayTotals[day]);
   });
+  if (grandTotalEl) {
+    grandTotalEl.textContent = formatHours(DAYS.reduce((s, d) => s + dayTotals[d], 0));
+  }
+}
 
-  grandTotalEl.textContent = formatHours(DAYS.reduce((s, d) => s + dayTotals[d], 0));
+function updateTotals() {
+  const adminTotals = sumDayTotals(customRows());
+  const projectTotals = sumDayTotals(projectRows());
+  const overallTotals = Object.fromEntries(DAYS.map((d) => [d, adminTotals[d] + projectTotals[d]]));
+
+  applyDayTotals(document.getElementById('task-table'), adminTotals, grandTotalEl);
+  applyDayTotals(document.getElementById('project-table'), projectTotals, document.getElementById('project-grand-total'));
+  applyDayTotals(document.getElementById('summary-section'), overallTotals, document.getElementById('overall-grand-total'));
 }
 
 async function addRow() {
@@ -246,6 +321,26 @@ async function addRow() {
     weekPicker.refreshWeeksList();
     const lastTaskInput = tbody.querySelector('tr:last-child .cell-input[data-field="task"]');
     if (lastTaskInput) lastTaskInput.focus();
+  } catch (error) {
+    alert(`Ошибка создания: ${error.message}`);
+  }
+}
+
+async function addQuickTask(overrides) {
+  const week = weekPicker.getWeek();
+  const fio = getSelectedPerson();
+  if (!fio) return;
+
+  const payload = { ...emptyTask(fio, week), ...overrides };
+  try {
+    const created = await api(`/api/tasks?week=${week}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    rows.push(created);
+    progress = buildProgressFromRows(rows);
+    render();
+    weekPicker.refreshWeeksList();
   } catch (error) {
     alert(`Ошибка создания: ${error.message}`);
   }
@@ -299,6 +394,77 @@ personSelect.addEventListener('change', async () => {
 document.getElementById('btn-add').addEventListener('click', () => addRow());
 document.getElementById('btn-export').addEventListener('click', () => {
   exportCsv(rows.filter((row) => !isProjectRow(row)), 'tasks', weekPicker.getWeek());
+});
+
+btnAddDowntime?.addEventListener('click', () => {
+  addQuickTask({ task: 'Простой', category: ADMIN_TASK_CATEGORY, fri: 1 });
+});
+
+function closeVacationPopover() {
+  vacationPopover?.classList.add('hidden');
+  vacationPopover?.querySelectorAll('input[type="checkbox"]').forEach((cb) => (cb.checked = false));
+}
+
+btnVacation?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  vacationPopover?.classList.toggle('hidden');
+});
+
+vacationPopover?.addEventListener('click', (e) => e.stopPropagation());
+
+document.getElementById('btn-vacation-cancel')?.addEventListener('click', closeVacationPopover);
+
+document.getElementById('btn-vacation-apply')?.addEventListener('click', async () => {
+  const checked = Array.from(vacationPopover.querySelectorAll('input[type="checkbox"]:checked')).map((cb) => cb.value);
+  if (!checked.length) {
+    closeVacationPopover();
+    return;
+  }
+  const overrides = { task: 'Отпуск', category: VACATION_CATEGORY };
+  DAYS.forEach((day) => {
+    overrides[day] = checked.includes(day) ? 8 : 0;
+  });
+  await addQuickTask(overrides);
+  closeVacationPopover();
+});
+
+function closeProjectPopover() {
+  projectPopover?.classList.add('hidden');
+  if (projectNameInput) projectNameInput.value = '';
+}
+
+btnAddProject?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const willOpen = projectPopover?.classList.contains('hidden');
+  projectPopover?.classList.toggle('hidden');
+  if (willOpen) projectNameInput?.focus();
+});
+
+projectPopover?.addEventListener('click', (e) => e.stopPropagation());
+
+document.getElementById('btn-project-cancel')?.addEventListener('click', closeProjectPopover);
+
+async function submitProjectPopover() {
+  const name = (projectNameInput?.value || '').trim();
+  if (!name) {
+    projectNameInput?.focus();
+    return;
+  }
+  await addQuickTask({ task: '', category: name, is_project: true });
+  closeProjectPopover();
+}
+
+document.getElementById('btn-project-apply')?.addEventListener('click', submitProjectPopover);
+projectNameInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitProjectPopover();
+  }
+});
+
+document.addEventListener('click', () => {
+  vacationPopover?.classList.add('hidden');
+  projectPopover?.classList.add('hidden');
 });
 (async () => {
   initThemeToggle(document.getElementById('theme-toggle'));

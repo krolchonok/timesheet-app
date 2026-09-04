@@ -15,8 +15,29 @@
     status: 80,
   };
 
+  const MIN_COL_PERCENT = {
+    task: 8,
+    category: 7,
+    'final-task': 9,
+    comment: 7,
+    fio: 7,
+    status: 7,
+  };
+
   function minColWidth(col) {
     return MIN_COL_WIDTH[col] ?? MIN_WIDTH;
+  }
+
+  function minColPercent(col) {
+    return MIN_COL_PERCENT[col] ?? 3;
+  }
+
+  function applyColWidthPx(table, col, widthPx) {
+    const tableWidth = table.getBoundingClientRect().width || 1;
+    const clampedPx = Math.max(minColWidth(col), widthPx);
+    const pct = Math.max(minColPercent(col), (clampedPx / tableWidth) * 100);
+    table.style.setProperty(`--col-${col}`, `${pct.toFixed(2)}%`);
+    return pct;
   }
 
   function reflowColumnTextareas(colName) {
@@ -109,8 +130,10 @@
     clearProjectColumnOverrides();
     clearFixedColumnOverrides();
 
-    Object.entries(saved).forEach(([key, px]) => {
-      if (!Number.isFinite(px) || px < MIN_WIDTH) return;
+    Object.entries(saved).forEach(([key, value]) => {
+      const width = Number(value);
+      if (!Number.isFinite(width) || width <= 0) return;
+      if (width > 100) return;
 
       let col;
       if (key.includes(':')) {
@@ -122,21 +145,20 @@
       }
       if (!RESIZABLE_COLS.includes(col)) return;
 
-      const width = Math.max(minColWidth(col), px);
       mainTables().forEach((table) => {
-        table.style.setProperty(`--col-${col}`, `${width}px`);
+        table.style.setProperty(`--col-${col}`, `${width}%`);
       });
     });
   }
 
-  function saveWidth(col, px) {
+  function saveWidth(col, pct) {
     let saved = {};
     try {
       saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     } catch (e) {
       saved = {};
     }
-    saved[`main:${col}`] = px;
+    saved[`main:${col}`] = Math.round(pct * 100) / 100;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
     } catch (e) {
@@ -192,12 +214,9 @@
 
   document.addEventListener('mousemove', (e) => {
     if (!active) return;
-    const width = Math.max(
-      minColWidth(active.colName),
-      Math.round(active.startWidth + (e.clientX - active.startX)),
-    );
+    const width = Math.round(active.startWidth + (e.clientX - active.startX));
     mainTables().forEach((table) => {
-      table.style.setProperty(`--col-${active.colName}`, `${width}px`);
+      applyColWidthPx(table, active.colName, width);
     });
     scheduleReflow(active.colName);
   });
@@ -205,8 +224,8 @@
   document.addEventListener('mouseup', () => {
     if (!active) return;
     const colName = active.colName;
-    const value = getComputedStyle(active.table).getPropertyValue(`--col-${colName}`);
-    saveWidth(colName, parseInt(value, 10));
+    const raw = getComputedStyle(active.table).getPropertyValue(`--col-${colName}`);
+    saveWidth(colName, parseFloat(raw));
     document.querySelectorAll('.col-resizer.is-resizing').forEach((el) => el.classList.remove('is-resizing'));
     document.body.classList.remove('col-resizing');
     active = null;
@@ -216,4 +235,8 @@
   loadWidths();
   injectResizers();
   new MutationObserver(injectResizers).observe(document.body, { childList: true, subtree: true });
+
+  window.addEventListener('resize', () => {
+    RESIZABLE_COLS.forEach((col) => reflowColumnTextareas(col));
+  });
 })();
