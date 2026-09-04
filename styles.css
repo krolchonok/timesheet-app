@@ -1367,13 +1367,21 @@ body.col-resizing * {
   vertical-align: middle;
 }
 
+.col-num:has(.row-drag-handle) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
 .col-num .row-num {
-  display: block;
   line-height: 1.1;
+  padding: 0 !important;
 }
 
 .row-drag-handle {
-  display: block;
+  flex: 0 0 auto;
   cursor: grab;
   color: var(--text-faint);
   font-size: 0.72rem;
@@ -1381,7 +1389,6 @@ body.col-resizing * {
   line-height: 1;
   user-select: none;
   opacity: 0.55;
-  padding: 2px 0 0;
 }
 
 .row-drag-handle:hover,
