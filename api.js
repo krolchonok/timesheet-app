@@ -447,6 +447,8 @@ function fillRowNumCell(cell, index) {
   if (!cell) return;
   cell.classList.add('col-num');
   cell.replaceChildren();
+  const wrap = document.createElement('span');
+  wrap.className = 'row-num-wrap';
   const handle = document.createElement('span');
   handle.className = 'row-drag-handle';
   handle.draggable = true;
@@ -456,7 +458,8 @@ function fillRowNumCell(cell, index) {
   const num = document.createElement('span');
   num.className = 'row-num';
   num.textContent = String(index + 1);
-  cell.append(handle, num);
+  wrap.append(handle, num);
+  cell.appendChild(wrap);
 }
 
 function renumberTaskRows(tbody) {

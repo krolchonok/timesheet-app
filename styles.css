@@ -1360,28 +1360,20 @@ body.col-resizing * {
   font-family: var(--font);
   font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
-  padding: 0 4px !important;
+  padding: 0 !important;
+  line-height: 1.1;
 }
 
-.col-num {
-  vertical-align: middle;
-}
-
-.col-num:has(.row-drag-handle) {
-  display: flex;
+.row-num-wrap {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
   white-space: nowrap;
-}
-
-.col-num .row-num {
-  line-height: 1.1;
-  padding: 0 !important;
+  vertical-align: middle;
 }
 
 .row-drag-handle {
-  flex: 0 0 auto;
   cursor: grab;
   color: var(--text-faint);
   font-size: 0.72rem;
