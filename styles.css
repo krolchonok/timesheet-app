@@ -2271,7 +2271,7 @@ textarea.cell-input {
 
 .tour-tooltip {
   position: fixed;
-  width: 320px;
+  width: 360px;
   max-width: calc(100vw - 32px);
   background: var(--surface);
   border-radius: var(--radius);
