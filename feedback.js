@@ -1,5 +1,5 @@
 (function () {
-  const SHORTCUT_HINT = 'Alt+Shift+P';
+  const SHORTCUT_HINT = 'Ctrl+M';
 
   let overlay = null;
   let lastPointerEl = null;
@@ -220,8 +220,9 @@
       return;
     }
     const key = e.key?.toLowerCase();
-    // Alt+Shift+P — без Ctrl/Cmd, чтобы не пересекаться с шорткатами браузера
-    if (key === 'p' && e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey) {
+    if (key === 'm' && (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
+      const tag = e.target?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
       e.preventDefault();
       openModal({ capture: true });
     }
