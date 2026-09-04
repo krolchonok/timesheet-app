@@ -49,18 +49,22 @@
             </div>
           </div>
         </div>
-        <button type="button" class="btn btn--primary" id="btn-add" disabled>+ Задача</button>
         <div class="popover-wrap">
-          <button type="button" class="btn btn--secondary" id="btn-add-project" disabled>+ Проект</button>
-          <div class="popover hidden" id="project-popover">
-            <p class="popover__title">Новая проектная задача</p>
+          <button type="button" class="btn btn--primary" id="btn-add" disabled>+ Задача</button>
+          <div class="popover hidden" id="task-popover">
+            <p class="popover__title">Новая задача</p>
             <label class="popover__field">
-              <span>Название проекта</span>
-              <input type="text" id="project-name-input" placeholder="Например: Проект «Атлас»">
+              <span>Тип</span>
+              <select id="task-type-select"></select>
+            </label>
+            <label class="popover__field">
+              <span>Название</span>
+              <input type="text" id="task-name-input" list="task-name-templates-list" placeholder="Например: Совещание">
+              <datalist id="task-name-templates-list"></datalist>
             </label>
             <div class="popover__actions">
-              <button type="button" class="btn btn--ghost btn--small" id="btn-project-cancel">Отмена</button>
-              <button type="button" class="btn btn--primary btn--small" id="btn-project-apply">Добавить</button>
+              <button type="button" class="btn btn--ghost btn--small" id="btn-task-cancel">Отмена</button>
+              <button type="button" class="btn btn--primary btn--small" id="btn-task-apply">Добавить</button>
             </div>
           </div>
         </div>
@@ -138,7 +142,7 @@
       <section class="task-section task-section--project" id="project-section">
         <div class="task-section__head">
           <h2>Проектные задачи</h2>
-          <p>Добавляйте свои проекты кнопкой «+ Проект» — название и часы задаёте сами</p>
+          <p>Добавляйте свои проекты кнопкой «+ Задача» (тип «Проект») — название и часы задаёте сами</p>
         </div>
         <div class="table-wrap">
           <table class="task-table task-table--project" id="project-table" data-no-resize="true">

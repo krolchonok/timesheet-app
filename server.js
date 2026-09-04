@@ -130,9 +130,15 @@ function migrateDb() {
     `);
   }
 
-  if (!tableExists('project_task_templates')) {
+  if (!tableExists('task_name_templates') && tableExists('project_task_templates')) {
+    // repurpose the old (retired) project-template table for the generic
+    // "typical task name" suggestion list — same shape, new job.
+    db.exec('ALTER TABLE project_task_templates RENAME TO task_name_templates');
+  }
+
+  if (!tableExists('task_name_templates')) {
     db.exec(`
-      CREATE TABLE project_task_templates (
+      CREATE TABLE task_name_templates (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT UNIQUE NOT NULL,
           sort_order INTEGER NOT NULL DEFAULT 0,
@@ -177,21 +183,23 @@ function seedTaskCategories() {
   defaults.forEach((name, index) => stmt.run(name, index));
 }
 
-function seedProjectTemplates() {
-  const defaults = ['Проектные задачи'];
-  const stmt = db.prepare('INSERT OR IGNORE INTO project_task_templates (name, sort_order) VALUES (?, ?)');
-  defaults.forEach((name, index) => stmt.run(name, index));
-  db.prepare('UPDATE project_task_templates SET active = 0 WHERE name = ?').run(ADMIN_TASK_CATEGORY);
+function retireLegacyProjectRow() {
+  db.prepare('UPDATE task_name_templates SET active = 0 WHERE name = ?').run(ADMIN_TASK_CATEGORY);
+  db.prepare('UPDATE task_name_templates SET active = 0 WHERE name = ?').run('Проектные задачи');
   db.prepare(`
     UPDATE tasks SET is_project = 0, category = ?
     WHERE is_project = 1 AND task = ?
   `).run(ADMIN_TASK_CATEGORY, ADMIN_TASK_CATEGORY);
 
   // Retired: the hard-coded "Проектные задачи" line is superseded by
-  // per-person project rows (project_editable). Stop generating it, and
-  // wipe out any that already exist.
-  db.prepare('UPDATE project_task_templates SET active = 0 WHERE name = ?').run('Проектные задачи');
+  // per-person project rows (project_editable). Wipe out any that remain.
   db.prepare('DELETE FROM tasks WHERE is_project = 1 AND project_editable = 0').run();
+}
+
+function seedTaskNameTemplates() {
+  const defaults = ['Совещание', 'Планёрка', 'Обучение', 'Больничный'];
+  const stmt = db.prepare('INSERT OR IGNORE INTO task_name_templates (name, sort_order) VALUES (?, ?)');
+  defaults.forEach((name, index) => stmt.run(name, index));
 }
 
 function seedPeople() {
@@ -225,41 +233,6 @@ function getPublicUserId() {
     row = db.prepare("SELECT id FROM users WHERE username = '_public'").get();
   }
   return row.id;
-}
-
-function ensureProjectTasks(fio, weekStart, userId) {
-  const templates = db.prepare(`
-    SELECT name FROM project_task_templates
-    WHERE active = 1
-    ORDER BY sort_order, name COLLATE NOCASE
-  `).all();
-  if (templates.length === 0) return;
-
-  const now = utcNow();
-  const exists = db.prepare(`
-    SELECT id FROM tasks
-    WHERE fio = ? AND week_start = ? AND is_project = 1 AND task = ?
-  `);
-  const insert = db.prepare(`
-    INSERT INTO tasks (
-        user_id, week_start, fio, task, is_project, category, final_task, status,
-        mon, tue, wed, thu, fri, comment, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, 1, '', '', ?, 0, 0, 0, 0, 0, '', ?, ?)
-  `);
-  for (const template of templates) {
-    if (exists.get(fio, weekStart, template.name)) continue;
-    insert.run(userId, weekStart, fio, template.name, DEFAULT_TASK_STATUS, now, now);
-  }
-}
-
-function ensureProjectTasksForWeek(weekStart, userId, fio) {
-  let names;
-  if (fio) {
-    names = [fio];
-  } else {
-    names = db.prepare('SELECT name FROM people WHERE active = 1 ORDER BY name COLLATE NOCASE').all().map((r) => r.name);
-  }
-  for (const name of names) ensureProjectTasks(name, weekStart, userId);
 }
 
 function hoursProgress(totalHours) {
@@ -352,7 +325,8 @@ function initDb() {
 
   migrateDb();
   seedPeople();
-  seedProjectTemplates();
+  retireLegacyProjectRow();
+  seedTaskNameTemplates();
   seedTaskCategories();
   syncOrphanTaskFio();
 
@@ -510,7 +484,6 @@ app.get('/api/tasks', (req, res) => {
 
   let rows;
   if (user && user.role === 'admin') {
-    ensureProjectTasksForWeek(week, user.id, fio || null);
     let query = `
       SELECT tasks.*, users.username AS owner_username
       FROM tasks
@@ -529,7 +502,6 @@ app.get('/api/tasks', (req, res) => {
     const person = getActivePerson(fio);
     if (!person) return res.json({ tasks: [], progress: hoursProgress(0) });
     fio = person.name;
-    ensureProjectTasks(fio, week, getPublicUserId());
     rows = db.prepare(`
       SELECT tasks.*, users.username AS owner_username
       FROM tasks
@@ -778,8 +750,6 @@ app.delete('/api/people/:personId', adminRequired, (req, res) => {
 // --- completion ---
 app.get('/api/completion', adminRequired, (req, res) => {
   const week = parseWeekStart(req.query.week);
-  const user = req.user;
-  ensureProjectTasksForWeek(week, user.id);
   const people = db.prepare('SELECT id, name FROM people WHERE active = 1 ORDER BY name COLLATE NOCASE').all();
 
   const result = [];
@@ -825,35 +795,36 @@ app.get('/api/completion', adminRequired, (req, res) => {
   });
 });
 
-// --- project templates ---
-app.get('/api/project-templates', loginRequired, (req, res) => {
+// --- task name templates (typical task-name suggestions, e.g. "Совещание") ---
+app.get('/api/task-name-templates', (req, res) => {
   const rows = db.prepare(`
     SELECT id, name, sort_order
-    FROM project_task_templates
+    FROM task_name_templates
     WHERE active = 1
     ORDER BY sort_order, name COLLATE NOCASE
   `).all();
   res.json(rows);
 });
 
-app.post('/api/project-templates', adminRequired, (req, res) => {
+app.post('/api/task-name-templates', adminRequired, (req, res) => {
   const payload = req.body || {};
   const name = String(payload.name || '').trim();
   if (!name) return res.status(400).json({ error: 'Укажите название' });
-  const exists = db.prepare('SELECT id FROM project_task_templates WHERE name = ?').get(name);
+  const exists = db.prepare('SELECT id FROM task_name_templates WHERE name = ?').get(name);
   if (exists) {
-    db.prepare('UPDATE project_task_templates SET active = 1 WHERE id = ?').run(exists.id);
-    return res.json(db.prepare('SELECT id, name, sort_order FROM project_task_templates WHERE id = ?').get(exists.id));
+    db.prepare('UPDATE task_name_templates SET active = 1 WHERE id = ?').run(exists.id);
+    return res.json(db.prepare('SELECT id, name, sort_order FROM task_name_templates WHERE id = ?').get(exists.id));
   }
-  const cur = db.prepare('INSERT INTO project_task_templates (name) VALUES (?)').run(name);
-  res.status(201).json(db.prepare('SELECT id, name, sort_order FROM project_task_templates WHERE id = ?').get(cur.lastInsertRowid));
+  const maxOrder = db.prepare('SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM task_name_templates').get().max_order;
+  const cur = db.prepare('INSERT INTO task_name_templates (name, sort_order) VALUES (?, ?)').run(name, maxOrder + 1);
+  res.status(201).json(db.prepare('SELECT id, name, sort_order FROM task_name_templates WHERE id = ?').get(cur.lastInsertRowid));
 });
 
-app.delete('/api/project-templates/:templateId', adminRequired, (req, res) => {
+app.delete('/api/task-name-templates/:templateId', adminRequired, (req, res) => {
   const templateId = parseInt(req.params.templateId, 10);
-  const row = db.prepare('SELECT id FROM project_task_templates WHERE id = ?').get(templateId);
+  const row = db.prepare('SELECT id FROM task_name_templates WHERE id = ?').get(templateId);
   if (!row) return res.status(404).json({ error: 'Not found' });
-  db.prepare('UPDATE project_task_templates SET active = 0 WHERE id = ?').run(templateId);
+  db.prepare('UPDATE task_name_templates SET active = 0 WHERE id = ?').run(templateId);
   res.json({ ok: true });
 });
 

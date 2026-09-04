@@ -93,6 +93,16 @@
       </div>
 
       <div class="manage-block">
+        <h3 class="manage-block__title">Типовые названия задач</h3>
+        <p class="manage-block__hint">Подсказки в поле «Название» при создании задачи (например «Совещание»)</p>
+        <form id="add-task-name-template-form" class="people-form">
+          <input type="text" id="new-task-name-template" placeholder="Например: Совещание" required>
+          <button type="submit" class="btn btn--secondary btn--small">Добавить</button>
+        </form>
+        <div id="task-name-template-list" class="project-templates"></div>
+      </div>
+
+      <div class="manage-block">
         <h3 class="manage-block__title">Настройки</h3>
         <label class="settings-check">
           <input type="checkbox" id="setting-allow-project-tasks">

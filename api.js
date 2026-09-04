@@ -142,6 +142,38 @@ function populateCategorySelect(select, categories, selectedValue = '') {
   });
 }
 
+const PROJECT_TYPE_VALUE = '__project__';
+
+function populateTaskTypeSelect(select, categories) {
+  if (!select) return;
+  select.replaceChildren();
+
+  const projectOption = document.createElement('option');
+  projectOption.value = PROJECT_TYPE_VALUE;
+  projectOption.textContent = 'Проект';
+  select.appendChild(projectOption);
+
+  const categoryGroup = document.createElement('optgroup');
+  categoryGroup.label = 'Категория';
+  categories.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.name;
+    option.textContent = item.name;
+    categoryGroup.appendChild(option);
+  });
+  select.appendChild(categoryGroup);
+}
+
+function populateTaskNameTemplates(datalistEl, templates) {
+  if (!datalistEl) return;
+  datalistEl.replaceChildren();
+  templates.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.name;
+    datalistEl.appendChild(option);
+  });
+}
+
 function populateStatusSelect(select, selectedValue = 'new') {
   if (!select) return;
   select.replaceChildren();

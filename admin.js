@@ -33,6 +33,7 @@ let rows = [];
 let completion = null;
 let weekPicker = null;
 let categories = [];
+let taskNameTemplates = [];
 let adminMode = 'view';
 let sectionsCollapsed = false;
 /** @type {Set<string>} hidden person names — empty set means all visible */
@@ -71,6 +72,10 @@ function setAdminMode(mode) {
     api('/api/categories').then((cats) => {
       categories = cats;
       renderCategoryList(categories);
+    });
+    api('/api/task-name-templates').then((templates) => {
+      taskNameTemplates = templates;
+      renderTaskNameTemplateList(taskNameTemplates);
     });
   } else {
     renderCompletion();
@@ -222,11 +227,7 @@ function renderCompletion() {
     nameEl.textContent = person.name;
     nameEl.title = person.name;
 
-    const meta = person.filled
-      ? `Проект ${formatHours(person.project_hours)} + задачи ${formatHours(person.report_hours)} = ${formatHours(person.total_hours)} / ${person.hours_norm} ч`
-      : (person.project_hours > 0 || person.report_hours > 0)
-        ? `Проект ${formatHours(person.project_hours)} + задачи ${formatHours(person.report_hours)} = ${formatHours(person.total_hours)} / ${person.hours_norm} ч`
-        : `0 / ${person.hours_norm} ч`;
+    const meta = `${formatHours(person.total_hours)} / ${person.hours_norm} ч`;
     metaEl.textContent = visible ? meta : 'Скрыт';
     metaEl.title = metaEl.textContent;
 
@@ -419,7 +420,15 @@ function renderUserSection(group, query) {
   }
 
   const headerEl = section.querySelector('.user-section__header');
-  const toggleCollapse = () => section.classList.toggle('user-section--collapsed');
+  const toggleCollapse = () => {
+    section.classList.toggle('user-section--collapsed');
+    if (!section.classList.contains('user-section--collapsed')) {
+      // the section was laid out with display:none while collapsed, so
+      // scrollHeight read as 0 back when rows were bound — recompute now
+      // that it's actually visible.
+      section.querySelectorAll('textarea.cell-input').forEach((el) => autoGrowTextarea(el));
+    }
+  };
   headerEl.addEventListener('click', (e) => {
     if (e.target.closest('.user-section__add-task')) return;
     toggleCollapse();
@@ -488,6 +497,12 @@ function render() {
     visibleTasks += visible.length;
     usersListEl.appendChild(renderUserSection(group, query));
   });
+
+  // rows above were bound while still detached from the document, so any
+  // auto-grow computed off scrollHeight there always read 0 — recompute
+  // now that everything is actually laid out (skips collapsed sections,
+  // which stay display:none until toggleCollapse expands them).
+  usersListEl.querySelectorAll('textarea.cell-input').forEach((el) => autoGrowTextarea(el));
 
   emptyHint.classList.toggle('hidden', groups.length > 0);
   emptyHint.textContent = rows.length > 0 || hiddenPeople.size > 0
@@ -600,6 +615,50 @@ document.getElementById('add-category-form').addEventListener('submit', async (e
     document.getElementById('new-category-name').value = '';
     categories = await api('/api/categories');
     renderCategoryList(categories);
+  } catch (error) {
+    alert(`Ошибка: ${error.message}`);
+  }
+});
+
+function renderTaskNameTemplateList(items) {
+  const el = document.getElementById('task-name-template-list');
+  if (!el) return;
+  el.replaceChildren();
+  if (!items.length) {
+    el.textContent = 'Типовые названия не заданы';
+    return;
+  }
+  items.forEach((item) => {
+    const chip = document.createElement('span');
+    chip.className = 'project-chip project-chip--category';
+    chip.textContent = item.name;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '×';
+    remove.addEventListener('click', async () => {
+      if (!confirm(`Удалить «${item.name}» из списка типовых названий?`)) return;
+      await api(`/api/task-name-templates/${item.id}`, { method: 'DELETE' });
+      taskNameTemplates = await api('/api/task-name-templates');
+      renderTaskNameTemplateList(taskNameTemplates);
+    });
+    chip.appendChild(remove);
+    el.appendChild(chip);
+  });
+}
+
+document.getElementById('add-task-name-template-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const input = document.getElementById('new-task-name-template');
+  const name = input.value.trim();
+  if (!name) return;
+  try {
+    await api('/api/task-name-templates', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+    input.value = '';
+    taskNameTemplates = await api('/api/task-name-templates');
+    renderTaskNameTemplateList(taskNameTemplates);
   } catch (error) {
     alert(`Ошибка: ${error.message}`);
   }
