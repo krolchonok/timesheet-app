@@ -873,8 +873,14 @@ for (const file of STATIC_FILES) {
 }
 
 app.get('/vendor/xlsx.full.min.js', (req, res) => {
+  const localVendor = path.join(BASE_DIR, 'vendor', 'xlsx.full.min.js');
+  const npmVendor = path.join(BASE_DIR, 'node_modules', 'xlsx', 'dist', 'xlsx.full.min.js');
+  const filePath = fs.existsSync(localVendor) ? localVendor : npmVendor;
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).type('text').send('xlsx.full.min.js not found — run npm install or ship vendor/xlsx.full.min.js');
+  }
   res.type('application/javascript');
-  res.sendFile(path.join(BASE_DIR, 'node_modules', 'xlsx', 'dist', 'xlsx.full.min.js'));
+  res.sendFile(filePath);
 });
 
 if (require.main === module) {
