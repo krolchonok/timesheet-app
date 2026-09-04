@@ -262,6 +262,22 @@ body {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+.popover__field select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.popover__field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 /* ── Buttons ── */
 
 .btn {
