@@ -154,12 +154,8 @@
       <div class="user-section__body">
         <div class="table-wrap">
           <table class="task-table task-table--admin">
-            <colgroup>
-              <col class="col-drag">
-            </colgroup>
             <thead>
               <tr>
-                <th class="col-drag" aria-label="Порядок"></th>
                 <th class="col-num">#</th>
                 <th class="col-category">Категория</th>
                 <th class="col-task">Название задачи</th>
@@ -178,7 +174,7 @@
             <tbody class="user-task-body"></tbody>
             <tfoot>
               <tr>
-                <td colspan="6" class="footer-label">Итого</td>
+                <td colspan="5" class="footer-label">Итого</td>
                 <td class="day-total" data-day="mon">0</td>
                 <td class="day-total" data-day="tue">0</td>
                 <td class="day-total" data-day="wed">0</td>
@@ -197,7 +193,6 @@
 
   <template id="row-project-view-template">
     <tr class="task-row task-row--project">
-      <td class="col-drag"></td>
       <td class="col-num"></td>
       <td class="col-category cell-text">Проектные</td>
       <td class="col-task cell-text project-task-name"></td>
@@ -226,7 +221,6 @@
 
   <template id="row-view-template">
     <tr class="task-row">
-      <td class="col-drag"></td>
       <td class="col-num"></td>
       <td class="col-category cell-text"></td>
       <td class="col-task">

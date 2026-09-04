@@ -33,8 +33,7 @@
   --font-mono: "DM Sans", system-ui, sans-serif;
   --transition: 0.18s ease;
 
-  --col-drag: 16px;
-  --col-num: 3%;
+  --col-num: 2.8%;
   --col-fio: 10%;
   --col-category: 10%;
   --col-task: 16%;
@@ -1227,15 +1226,9 @@ body {
   table-layout: fixed;
 }
 
-.task-table--project .col-drag {
-  width: 16px;
-  min-width: 16px;
-  max-width: 16px;
-}
-
 .task-table--project .col-num {
-  width: 3.5%;
-  min-width: 32px;
+  width: 3%;
+  min-width: 28px;
   text-align: center;
   vertical-align: middle;
 }
@@ -1282,32 +1275,8 @@ body {
   pointer-events: none !important;
 }
 
-.task-table > colgroup > col.col-drag {
-  width: 16px;
-}
-
-.task-table th.col-drag,
-.task-table td.col-drag,
-.col-drag {
-  width: 16px;
-  min-width: 16px;
-  max-width: 16px;
-  text-align: center;
-  vertical-align: middle;
-  padding: 0 !important;
-  white-space: nowrap;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.task-table thead th.col-drag {
-  padding: 11px 0 !important;
-  letter-spacing: 0;
-  font-size: 0;
-  color: transparent;
-}
-
 .col-num {
+  position: relative;
   width: var(--col-num);
   min-width: 28px;
   text-align: center;
@@ -1401,12 +1370,17 @@ body.col-resizing * {
 .row-drag-handle {
   appearance: none;
   -webkit-appearance: none;
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
   display: inline-flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 1px;
-  width: 12px;
+  width: 10px;
   height: 16px;
   margin: 0;
   padding: 0;
@@ -1415,9 +1389,8 @@ body.col-resizing * {
   background: transparent;
   cursor: grab;
   color: var(--text-faint);
-  opacity: 0.4;
+  opacity: 0.35;
   line-height: 0;
-  vertical-align: middle;
   transition: opacity 0.15s ease, background 0.15s ease;
 }
 

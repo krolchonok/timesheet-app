@@ -289,7 +289,7 @@ function render() {
     const tr = document.createElement('tr');
     tr.className = 'task-row--empty';
     const td = document.createElement('td');
-    td.colSpan = 11;
+    td.colSpan = 10;
     td.className = 'task-row--empty-cell';
     td.textContent = 'Проектов пока нет — добавьте кнопкой «+ Задача» (тип «Проектная задача»)';
     tr.appendChild(td);

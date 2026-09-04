@@ -102,12 +102,8 @@
         </div>
         <div class="table-wrap">
           <table class="task-table" id="task-table">
-            <colgroup>
-              <col class="col-drag">
-            </colgroup>
             <thead>
               <tr>
-                <th class="col-drag" aria-label="Порядок"></th>
                 <th class="col-num">#</th>
                 <th class="col-category">Категория</th>
                 <th class="col-task">Название задачи</th>
@@ -126,7 +122,7 @@
             <tbody id="task-body"></tbody>
             <tfoot>
               <tr>
-                <td colspan="6" class="footer-label">Итого</td>
+                <td colspan="5" class="footer-label">Итого</td>
                 <td class="day-total" data-day="mon">0</td>
                 <td class="day-total" data-day="tue">0</td>
                 <td class="day-total" data-day="wed">0</td>
@@ -146,12 +142,8 @@
         </div>
         <div class="table-wrap">
           <table class="task-table task-table--project" id="project-table" data-no-resize="true">
-            <colgroup>
-              <col class="col-drag">
-            </colgroup>
             <thead>
               <tr>
-                <th class="col-drag" aria-label="Порядок"></th>
                 <th class="col-num">#</th>
                 <th class="col-category">Название проекта</th>
                 <th class="col-task">Название задачи</th>
@@ -167,7 +159,7 @@
             <tbody id="project-body"></tbody>
             <tfoot>
               <tr>
-                <td colspan="4" class="footer-label">Итого</td>
+                <td colspan="3" class="footer-label">Итого</td>
                 <td class="day-total" data-day="mon">0</td>
                 <td class="day-total" data-day="tue">0</td>
                 <td class="day-total" data-day="wed">0</td>
@@ -199,7 +191,6 @@
 
   <template id="project-row-template">
     <tr class="task-row task-row--project">
-      <td class="col-drag"></td>
       <td class="col-num"></td>
       <td class="col-category cell-text"></td>
       <td class="col-task">
@@ -227,7 +218,6 @@
 
   <template id="row-template">
     <tr class="task-row">
-      <td class="col-drag"></td>
       <td class="col-num"></td>
       <td class="col-category">
         <select class="cell-select" data-field="category"></select>

@@ -445,27 +445,23 @@ function initThemeToggle(button) {
 // ── Row drag reorder (pointer-driven) ──
 function fillRowDragAndNum(tr, index) {
   if (!tr) return;
-
-  const dragCell = tr.querySelector('.col-drag');
-  if (dragCell) {
-    dragCell.replaceChildren();
-    const handle = document.createElement('button');
-    handle.type = 'button';
-    handle.className = 'row-drag-handle';
-    handle.title = 'Перетащить';
-    handle.setAttribute('aria-label', 'Перетащить строку');
-    handle.innerHTML = '<span></span><span></span>';
-    dragCell.appendChild(handle);
-  }
-
   const numCell = tr.querySelector('.col-num');
-  if (numCell) {
-    numCell.replaceChildren();
-    const num = document.createElement('span');
-    num.className = 'row-num';
-    num.textContent = String(index + 1);
-    numCell.appendChild(num);
-  }
+  if (!numCell) return;
+
+  numCell.replaceChildren();
+
+  const handle = document.createElement('button');
+  handle.type = 'button';
+  handle.className = 'row-drag-handle';
+  handle.title = 'Перетащить';
+  handle.setAttribute('aria-label', 'Перетащить строку');
+  handle.innerHTML = '<span></span><span></span>';
+
+  const num = document.createElement('span');
+  num.className = 'row-num';
+  num.textContent = String(index + 1);
+
+  numCell.append(handle, num);
 }
 
 function renumberTaskRows(tbody) {
