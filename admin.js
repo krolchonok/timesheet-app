@@ -493,6 +493,7 @@ function renderUserSection(group, query) {
       // scrollHeight read as 0 back when rows were bound — recompute now
       // that it's actually visible.
       section.querySelectorAll('textarea.cell-input').forEach((el) => autoGrowTextarea(el));
+      refreshTextareaHeights(section);
     }
   };
   headerEl.addEventListener('click', (e) => {
@@ -568,7 +569,7 @@ function render() {
   // auto-grow computed off scrollHeight there always read 0 — recompute
   // now that everything is actually laid out (skips collapsed sections,
   // which stay display:none until toggleCollapse expands them).
-  usersListEl.querySelectorAll('textarea.cell-input').forEach((el) => autoGrowTextarea(el));
+  refreshTextareaHeights(usersListEl);
 
   emptyHint.classList.toggle('hidden', groups.length > 0);
   emptyHint.textContent = rows.length > 0 || hiddenPeople.size > 0
@@ -815,6 +816,7 @@ document.querySelectorAll('.admin-tabs__btn').forEach((btn) => {
 });
 
 (async () => {
+  initThemeToggle(document.getElementById('theme-toggle'));
   settingAllowProjectTasks.checked = allowProjectTasks;
 
   const user = await requireAdminAuth();
@@ -832,6 +834,11 @@ document.querySelectorAll('.admin-tabs__btn').forEach((btn) => {
       loadData();
     },
   });
+
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => refreshTextareaHeights()).catch(() => {});
+  }
+  window.addEventListener('resize', () => refreshTextareaHeights());
 
   await loadData();
   setAdminMode('view');

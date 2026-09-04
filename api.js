@@ -8,9 +8,23 @@ const TASK_STATUSES = [
 ];
 
 function autoGrowTextarea(el) {
-  if (!el) return;
-  el.style.height = 'auto';
-  el.style.height = `${Math.max(el.scrollHeight, 40)}px`;
+  if (!el || el.tagName !== 'TEXTAREA') return;
+  // Collapse first so scrollHeight reflects the real content height even
+  // after value was set programmatically (import / re-render).
+  el.style.height = '0px';
+  const next = Math.max(el.scrollHeight, 40);
+  el.style.height = `${next}px`;
+}
+
+function refreshTextareaHeights(root = document) {
+  const run = () => {
+    root.querySelectorAll('textarea.cell-input').forEach(autoGrowTextarea);
+  };
+  run();
+  requestAnimationFrame(() => {
+    run();
+    requestAnimationFrame(run);
+  });
 }
 
 function unwrapTasksResponse(data) {
@@ -388,3 +402,42 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault();
   focusCell(target, direction);
 });
+
+// ── UI appearance: default (soft) / grid (cell borders) ──
+const THEME_STORAGE_KEY = 'timesheet-theme';
+const THEMES = ['default', 'grid'];
+
+function getTheme() {
+  const value = document.documentElement.getAttribute('data-theme') || 'default';
+  return THEMES.includes(value) ? value : 'default';
+}
+
+function setTheme(theme) {
+  const value = THEMES.includes(theme) ? theme : 'default';
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, value);
+  } catch (_) {
+    /* ignore */
+  }
+  if (value === 'default') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', value);
+  }
+}
+
+function initThemeToggle(button) {
+  if (!button) return;
+  const render = () => {
+    const active = getTheme() === 'grid';
+    button.textContent = active ? 'Оформление: с обводкой' : 'Оформление: обычное';
+    button.setAttribute('aria-pressed', String(active));
+    button.title = 'Обычное — мягкие границы; с обводкой — сетка ячеек таблицы';
+  };
+  render();
+  button.addEventListener('click', () => {
+    setTheme(getTheme() === 'grid' ? 'default' : 'grid');
+    render();
+    refreshTextareaHeights();
+  });
+}

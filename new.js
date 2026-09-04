@@ -22,7 +22,7 @@
 
   panel.addEventListener('click', (e) => {
     const item = e.target.closest('.more-menu__item');
-    if (!item) return;
+    if (!item || item.id === 'theme-toggle') return;
     // Keep menu open only for disabled items
     if (item.disabled) {
       e.preventDefault();

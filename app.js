@@ -284,6 +284,7 @@ function render() {
   if (fillPercent) {
     fillPercent.textContent = `${progress.hours_percent}%`;
   }
+  refreshTextareaHeights(tasksLayout || document);
 }
 
 function onCellChange(taskId, input, tr) {
@@ -546,6 +547,8 @@ async function importScheduleFile(file) {
 }
 
 (async () => {
+  initThemeToggle(document.getElementById('theme-toggle'));
+
   await loadPeople();
 
   weekPicker = initWeekPicker({
@@ -568,6 +571,11 @@ async function importScheduleFile(file) {
       onFile: importScheduleFile,
     });
   }
+
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => refreshTextareaHeights()).catch(() => {});
+  }
+  window.addEventListener('resize', () => refreshTextareaHeights());
 
   if (getSelectedPerson()) {
     await loadTasks();
