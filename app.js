@@ -498,8 +498,6 @@ async function importScheduleFile(file) {
 }
 
 (async () => {
-  initThemeToggle(document.getElementById('theme-toggle'));
-
   await loadPeople();
 
   weekPicker = initWeekPicker({

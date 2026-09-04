@@ -776,7 +776,6 @@ document.querySelectorAll('.admin-tabs__btn').forEach((btn) => {
 });
 
 (async () => {
-  initThemeToggle(document.getElementById('theme-toggle'));
   settingAllowProjectTasks.checked = allowProjectTasks;
 
   const user = await requireAdminAuth();

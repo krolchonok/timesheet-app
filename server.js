@@ -26,18 +26,9 @@ function seedDemoEnabled() {
   return (process.env.TIMESHEET_SEED_DEMO || fallback).trim() === '1';
 }
 
-// --- UI theme (visual only: default classic look, or an MS-Project-styled variant) ---
-const UI_THEMES = ['default', 'msproject'];
-const UI_THEME_PLACEHOLDER = '__UI_THEME_DEFAULT__';
-
-function uiThemeDefault() {
-  const value = (process.env.UI_THEME || 'default').trim().toLowerCase();
-  return UI_THEMES.includes(value) ? value : 'default';
-}
-
 const htmlPageCache = new Map();
 
-function sendThemedHtml(res, filename) {
+function sendHtml(res, filename) {
   let template = htmlPageCache.get(filename);
   if (template === undefined) {
     template = fs.readFileSync(path.join(BASE_DIR, filename), 'utf8');
@@ -45,8 +36,7 @@ function sendThemedHtml(res, filename) {
       htmlPageCache.set(filename, template);
     }
   }
-  const html = template.replace(UI_THEME_PLACEHOLDER, uiThemeDefault());
-  res.type('html').send(html);
+  res.type('html').send(template);
 }
 
 // --- password hashing (pbkdf2, self-contained format: pbkdf2$iterations$salt$hash) ---
@@ -440,12 +430,12 @@ function canAccessTask(user, taskRow) {
 
 // --- static pages ---
 // --- static pages ---
-app.get('/', (req, res) => sendThemedHtml(res, 'index.html'));
+app.get('/', (req, res) => sendHtml(res, 'index.html'));
 app.get('/new', (req, res) => res.redirect(301, '/'));
-app.get('/old', (req, res) => sendThemedHtml(res, 'old.html'));
-app.get('/login', (req, res) => sendThemedHtml(res, 'login.html'));
-app.get('/admin', (req, res) => sendThemedHtml(res, 'admin.html'));
-app.get('/admin-old', (req, res) => sendThemedHtml(res, 'admin-old.html'));
+app.get('/old', (req, res) => res.redirect(301, '/'));
+app.get('/login', (req, res) => sendHtml(res, 'login.html'));
+app.get('/admin', (req, res) => sendHtml(res, 'admin.html'));
+app.get('/admin-old', (req, res) => res.redirect(301, '/admin'));
 
 // --- auth ---
 app.post('/api/login', (req, res) => {
