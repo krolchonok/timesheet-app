@@ -918,7 +918,7 @@ body {
 }
 
 .cell-text {
-  padding: 10px 8px;
+  padding: 11px 8px;
   font-size: 0.88rem;
   line-height: 1.35;
   color: var(--text);
@@ -1463,6 +1463,7 @@ body.col-resizing * {
 
 .row-num {
   display: inline-block;
+  margin-top: 11px;
   text-align: center;
   color: var(--text-faint);
   font-family: var(--font);
@@ -1477,8 +1478,7 @@ body.col-resizing * {
   -webkit-appearance: none;
   position: absolute;
   left: 1px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 11px;
   z-index: 2;
   display: inline-flex;
   flex-direction: row;
@@ -1695,7 +1695,7 @@ textarea.cell-input {
 
 .cell-input--hours {
   text-align: center;
-  padding: 8px 2px;
+  padding: 11px 2px;
   font-family: var(--font);
   font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
@@ -1710,6 +1710,7 @@ textarea.cell-input {
 }
 
 .row-total {
+  padding: 11px 8px;
   text-align: center;
   font-family: var(--font);
   font-variant-numeric: tabular-nums;
@@ -1772,6 +1773,10 @@ textarea.cell-input {
 
 .col-actions {
   white-space: nowrap;
+}
+
+.task-table td.col-actions {
+  padding-top: 11px;
 }
 
 .col-actions .btn-icon {
@@ -2091,7 +2096,7 @@ textarea.cell-input {
   background: transparent;
   font: inherit;
   color: inherit;
-  padding: 10px 4px;
+  padding: 11px 4px;
   appearance: none;
   cursor: pointer;
   white-space: normal;
@@ -2113,11 +2118,15 @@ textarea.cell-input {
 
 .final-task-cell {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 6px;
-  padding: 4px 6px;
+  padding: 0 6px;
   min-width: 0;
+}
+
+.final-task-cell .btn-transfer {
+  margin-top: 4px;
 }
 
 .final-task-cell .cell-input {
@@ -2135,6 +2144,7 @@ textarea.cell-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  margin-top: 11px;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.75rem;
