@@ -1226,7 +1226,7 @@ body {
 .task-table td {
   border-bottom: 1px solid var(--border-subtle);
   padding: 0;
-  vertical-align: middle;
+  vertical-align: top;
   text-align: center;
   overflow-wrap: break-word;
   min-width: 0;
@@ -1382,6 +1382,10 @@ body {
   min-width: 28px;
   text-align: center;
   vertical-align: middle;
+}
+
+.task-table td.col-num {
+  vertical-align: top;
 }
 .col-fio { width: var(--col-fio); }
 .col-category { width: var(--col-category); }
