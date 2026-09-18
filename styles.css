@@ -1350,6 +1350,7 @@ body {
 .col-final-task { width: var(--col-final-task); }
 .col-status { width: var(--col-status); }
 .col-day {
+  position: relative;
   width: var(--col-day);
   min-width: 40px;
   max-width: 52px;
@@ -1650,12 +1651,14 @@ textarea.cell-input {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
-/* Percentage heights on a form control placed directly in a <td> are
-   unreliable cross-browser. Give the cell a plain block wrapper (which
-   table cells DO reliably stretch) and let flex stretch the input to
-   fill it instead. */
+/* height:100% on a <td>'s child (even a plain div) does not reliably
+   track the row's real height once the row is taller than the cell's own
+   content, so pin the wrapper to the cell's box directly instead (see
+   position:relative on .col-day) and let flex stretch the input inside
+   it to match. */
 .day-cell {
-  height: 100%;
+  position: absolute;
+  inset: 0;
   display: flex;
 }
 
