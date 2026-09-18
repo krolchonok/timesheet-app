@@ -1651,6 +1651,8 @@ textarea.cell-input {
 }
 
 .cell-input--hours {
+  height: 100%;
+  box-sizing: border-box;
   text-align: center;
   padding: 11px 2px;
   font-family: var(--font);
