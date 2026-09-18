@@ -67,51 +67,6 @@
     return -1;
   }
 
-  function detectStatusColumn(rows, headerIndex, taskCol) {
-    const header = rows[headerIndex] || [];
-    const byHeader = findColumn(header, [/флаж/i, /установлен/i, /статус.*строк/i, /^статус$/i]);
-    if (byHeader >= 0) return byHeader;
-
-    const counts = new Map();
-    for (let r = headerIndex + 1; r < Math.min(rows.length, headerIndex + 80); r++) {
-      const row = rows[r] || [];
-      const limit = Math.min(row.length, 6);
-      for (let c = 0; c < limit; c++) {
-        if (c === taskCol) continue;
-        const value = normalizeText(row[c]).toLowerCase();
-        if (!value) continue;
-        if (/установлен|снят/.test(value) || value === 'true' || value === 'false') {
-          counts.set(c, (counts.get(c) || 0) + 1);
-        }
-      }
-    }
-    let bestCol = 0;
-    let bestCount = -1;
-    counts.forEach((count, col) => {
-      if (count > bestCount) {
-        bestCount = count;
-        bestCol = col;
-      }
-    });
-    return bestCount > 0 ? bestCol : 0;
-  }
-
-  function isActiveTaskStatus(value) {
-    if (value === true || value === 1) return true;
-    const text = normalizeText(value).toLowerCase();
-    if (!text) return false;
-    if (text === 'true' || text === '1' || text === 'yes' || text === 'да') return true;
-    return text.includes('установлен');
-  }
-
-  function isInactiveStatus(value) {
-    if (value === false || value === 0) return true;
-    const text = normalizeText(value).toLowerCase();
-    if (!text) return false;
-    if (text === 'false' || text === '0' || text === 'no' || text === 'нет') return true;
-    return text.includes('снят');
-  }
-
   function isProjectHeaderName(taskName) {
     return /^название проекта\s*:/i.test(normalizeText(taskName));
   }
@@ -127,7 +82,7 @@
   }
 
   function parseScheduleRows(rows) {
-    if (!rows || !rows.length) return { tasks: [], weekHint: '', error: 'Пустой файл', seenStatuses: [] };
+    if (!rows || !rows.length) return { tasks: [], weekHint: '', error: 'Пустой файл' };
 
     const headerIndex = findHeaderRowIndex(rows);
     const header = rows[headerIndex] || [];
@@ -137,7 +92,6 @@
         tasks: [],
         weekHint: '',
         error: 'Не найдены колонки дней (Пн–Пт). Проверьте, что это выгрузка расписания.',
-        seenStatuses: [],
       };
     }
 
@@ -157,8 +111,6 @@
       const idx = findColumn(header, [/категория выставления/i, /выставлен.*счет/i, /^категория$/i]);
       return idx >= 0 ? idx : 5;
     })();
-    const statusCol = detectStatusColumn(rows, headerIndex, taskCol);
-
     const weekHint = DAY_KEYS
       .filter((d) => dayCols[d] != null)
       .map((d) => normalizeText(header[dayCols[d]]))
@@ -166,27 +118,18 @@
       .join(' · ');
 
     const tasks = [];
-    const seenStatuses = [];
+    let skippedNoHours = 0;
     for (let r = headerIndex + 1; r < rows.length; r++) {
       const row = rows[r] || [];
-      const statusRaw = cell(row, statusCol);
-      const status = normalizeText(statusRaw);
       const taskName = normalizeText(cell(row, taskCol));
       const projectName = normalizeText(cell(row, projectCol));
       const note = normalizeText(cell(row, noteCol));
       const billing = normalizeText(cell(row, billingCol));
 
-      if (status && seenStatuses.length < 12 && !seenStatuses.includes(status)) {
-        seenStatuses.push(status);
-      }
-
       if (!taskName) continue;
       if (/^общие трудозатраты/i.test(projectName) || /^общие трудозатраты/i.test(taskName)) continue;
       if (isProjectHeaderName(taskName)) continue;
-      if (isInactiveStatus(statusRaw)) continue;
 
-      // Prefer explicit "Установлен", but also keep rows with empty status
-      // if they look like real tasks (have project / hours).
       const hours = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
       let total = 0;
       DAY_KEYS.forEach((day) => {
@@ -196,9 +139,13 @@
         total += value;
       });
 
-      const active = isActiveTaskStatus(statusRaw);
-      const looksLikeTask = Boolean(projectName) || total > 0;
-      if (!active && !(status === '' && looksLikeTask)) continue;
+      // A row is a real task line only if at least one weekday (Пн–Пт) has
+      // hours marked. The status column ("Установлен"/"Снят") isn't reliable
+      // across different exports, so it's no longer used to decide this.
+      if (total <= 0) {
+        skippedNoHours += 1;
+        continue;
+      }
 
       const admin = isAdminProject(projectName);
       tasks.push({
@@ -221,13 +168,13 @@
 
     let error = '';
     if (!tasks.length) {
-      const statusHint = seenStatuses.length
-        ? ` Найдены значения в колонке статуса: ${seenStatuses.slice(0, 6).join(', ')}.`
+      const hoursHint = skippedNoHours
+        ? ` Найдено строк с названием задачи: ${skippedNoHours}, но ни в одной нет часов по дням Пн–Пт.`
         : '';
-      error = `В файле нет строк задач (ожидался статус «Установлен»).${statusHint}`;
+      error = `В файле нет строк с проставленными часами по дням недели (Пн–Пт).${hoursHint}`;
     }
 
-    return { tasks, weekHint, error, seenStatuses, headerIndex, statusCol, taskCol };
+    return { tasks, weekHint, error, headerIndex, taskCol };
   }
 
   function parseSheet(workbook, sheetName) {
