@@ -17,12 +17,24 @@ function autoGrowTextarea(el) {
   updateRowTallness(el.closest('tr'));
 }
 
-// A row is "tall" once any of its textareas grows past the single-line
-// baseline (40px). Cells switch to top-alignment only then (see
-// .task-row--tall in styles.css), so short rows stay vertically centered.
+// A textarea's own single-line height (padding + one line-height) already
+// sits a couple px above the 40px CSS floor, so comparing against a fixed
+// 40 flagged every one-line field as "tall". Derive the real single-line
+// height from its computed style instead, and only count it as grown once
+// it clears that by more than rounding slop.
+function isTextareaMultiline(el) {
+  const style = getComputedStyle(el);
+  const lineHeight = parseFloat(style.lineHeight) || 18;
+  const singleLine = lineHeight + parseFloat(style.paddingTop || 0) + parseFloat(style.paddingBottom || 0);
+  return el.offsetHeight > singleLine + 4;
+}
+
+// A row is "tall" once any of its textareas actually wraps to a second
+// line. Cells switch to top-alignment only then (see .task-row--tall in
+// styles.css), so short rows stay vertically centered.
 function updateRowTallness(tr) {
   if (!tr) return;
-  const isTall = [...tr.querySelectorAll('textarea.cell-input')].some((t) => t.offsetHeight > 40);
+  const isTall = [...tr.querySelectorAll('textarea.cell-input')].some(isTextareaMultiline);
   tr.classList.toggle('task-row--tall', isTall);
 }
 
