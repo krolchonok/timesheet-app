@@ -1232,19 +1232,6 @@ body {
   min-width: 0;
 }
 
-/* Rows stay centered by default. Once a growing cell (task/category/
-   final-task/comment textarea) pushes the row past one line, switch to
-   top-alignment so the other cells stop re-centering on every keystroke —
-   the # and Σ columns are exempted since they never need that padding. */
-.task-row--tall td {
-  vertical-align: top;
-}
-
-.task-row--tall td.col-num,
-.task-row--tall td.row-total {
-  vertical-align: middle;
-}
-
 .task-table thead th {
   background: var(--surface-muted);
   font-weight: 600;
@@ -1756,10 +1743,6 @@ textarea.cell-input {
   white-space: nowrap;
 }
 
-.task-row--tall td.col-actions {
-  padding-top: 11px;
-}
-
 .col-actions .btn-icon {
   display: inline-flex;
   vertical-align: middle;
@@ -2106,14 +2089,6 @@ textarea.cell-input {
   min-width: 0;
 }
 
-.task-row--tall .final-task-cell {
-  align-items: flex-start;
-}
-
-.task-row--tall .final-task-cell .btn-transfer {
-  margin-top: 4px;
-}
-
 .final-task-cell .cell-input {
   flex: 1;
   min-width: 0;
@@ -2123,10 +2098,6 @@ textarea.cell-input {
   flex-shrink: 0;
   padding: 4px 8px;
   min-width: 32px;
-}
-
-.task-row--tall .status-badge {
-  margin-top: 11px;
 }
 
 .status-badge {
