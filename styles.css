@@ -1323,59 +1323,6 @@ body {
   padding-left: 16px;
 }
 
-.task-table--project {
-  table-layout: fixed;
-}
-
-.task-table--project .col-num {
-  width: 3%;
-  min-width: 28px;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.task-table--project .col-category {
-  width: 20%;
-  min-width: 110px;
-}
-
-.task-table--project .col-task {
-  width: 21%;
-  min-width: 110px;
-}
-
-.task-table--project .col-day {
-  width: 4.5%;
-  min-width: 40px;
-  max-width: 52px;
-}
-
-.task-table--project .col-total {
-  width: 4%;
-  min-width: 40px;
-  max-width: 52px;
-}
-
-.task-table--project thead th {
-  cursor: default;
-  pointer-events: none;
-}
-
-.task-table--project tbody td.col-category,
-.task-table--project tbody td.col-task {
-  background: var(--surface-muted);
-}
-
-.task-table--project .project-task-name {
-  color: var(--text-muted);
-}
-
-.task-table--project .col-resizer,
-#project-section .col-resizer {
-  display: none !important;
-  pointer-events: none !important;
-}
-
 .col-num {
   position: relative;
   width: var(--col-num);

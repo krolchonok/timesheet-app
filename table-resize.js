@@ -3,7 +3,6 @@
     'fio', 'category', 'task', 'final-task', 'status', 'comment',
   ];
   const FIXED_COLS = ['day', 'total'];
-  const ALL_COLS = [...RESIZABLE_COLS, ...FIXED_COLS, 'num'];
   const STORAGE_KEY = 'timesheet-col-widths';
   const MIN_WIDTH = 40;
   const MIN_COL_WIDTH = {
@@ -54,16 +53,8 @@
     });
   }
 
-  function isStaticTable(table) {
-    return Boolean(
-      table?.classList.contains('task-table--project')
-      || table?.dataset.noResize === 'true'
-      || table?.closest('#project-section, .task-section--project'),
-    );
-  }
-
   function mainTables() {
-    return document.querySelectorAll('.task-table:not(.task-table--project):not([data-no-resize="true"])');
+    return document.querySelectorAll('.task-table');
   }
 
   function clearFixedColumnOverrides() {
@@ -73,12 +64,6 @@
     ];
     FIXED_COLS.forEach((col) => {
       targets.forEach((el) => el.style.removeProperty(`--col-${col}`));
-    });
-  }
-
-  function clearProjectColumnOverrides() {
-    document.querySelectorAll('.task-table--project').forEach((table) => {
-      ALL_COLS.forEach((col) => table.style.removeProperty(`--col-${col}`));
     });
   }
 
@@ -127,7 +112,6 @@
     }
     saved = purgeProjectColumnWidths(saved);
     saved = purgeFixedColumnWidths(saved);
-    clearProjectColumnOverrides();
     clearFixedColumnOverrides();
 
     Object.entries(saved).forEach(([key, value]) => {
@@ -174,12 +158,7 @@
 
   function injectResizers() {
     document.querySelectorAll('.task-table thead th').forEach((th) => {
-      const table = th.closest('table');
       const existing = th.querySelector('.col-resizer');
-      if (isStaticTable(table)) {
-        existing?.remove();
-        return;
-      }
       const colName = colNameOf(th);
       if (!colName) {
         existing?.remove();
@@ -200,7 +179,7 @@
     const th = handle.closest('th');
     const table = th.closest('table');
     const colName = colNameOf(th);
-    if (!colName || !table || isStaticTable(table)) return;
+    if (!colName || !table) return;
     active = {
       table,
       colName,

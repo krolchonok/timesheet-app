@@ -2,7 +2,6 @@ const PERSON_STORAGE_KEY = 'timesheet-selected-person';
 
 const projectBody = document.getElementById('project-body');
 const tbody = document.getElementById('task-body');
-const projectRowTemplate = document.getElementById('project-row-template');
 const rowTemplate = document.getElementById('row-template');
 const emptyHint = document.getElementById('empty-hint');
 const tasksLayout = document.getElementById('tasks-layout');
@@ -190,68 +189,25 @@ function bindTaskRowReorder(tr, isProject) {
   });
 }
 
-function renderProjectRow(row, index, tbodyEl) {
-  const tr = projectRowTemplate.content.cloneNode(true).querySelector('tr');
+function renderTaskRow(row, index, tbodyEl) {
+  const tr = rowTemplate.content.cloneNode(true).querySelector('tr');
   tr.dataset.id = row.id;
   fillRowDragAndNum(tr, index);
+  applyRowStatusClass(tr, row.status || 'new');
 
+  const project = isProjectRow(row);
   const categoryCell = tr.querySelector('.col-category');
-  const taskCell = tr.querySelector('.col-task');
-  if (row.project_editable) {
+  if (project) {
     const nameArea = document.createElement('textarea');
     nameArea.className = 'cell-input';
     nameArea.dataset.field = 'category';
     nameArea.rows = 1;
     nameArea.placeholder = 'Название проекта';
     nameArea.value = row.category || '';
-    categoryCell.classList.remove('cell-text');
     categoryCell.replaceChildren(nameArea);
-
-    const taskArea = document.createElement('textarea');
-    taskArea.className = 'cell-input';
-    taskArea.dataset.field = 'task';
-    taskArea.rows = 1;
-    taskArea.placeholder = 'Название задачи';
-    taskArea.value = row.task || '';
-    taskCell.replaceChildren(taskArea);
   } else {
-    categoryCell.textContent = row.category || '—';
-    taskCell.querySelector('.project-task-name').textContent = row.task;
+    populateCategorySelect(categoryCell.querySelector('[data-field="category"]'), categories, row.category || '');
   }
-
-  tr.querySelectorAll('.cell-input[data-field]').forEach((input) => {
-    const field = input.dataset.field;
-    if (DAYS.includes(field)) {
-      input.value = formatHours(parseHours(row[field]));
-    }
-  });
-
-  if (row.project_editable) {
-    const actions = tr.querySelector('.col-actions');
-    actions.replaceChildren();
-    actions.appendChild(makeConvertTypeButton(row));
-    const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.className = 'btn-icon btn-delete';
-    deleteBtn.title = 'Удалить проект';
-    deleteBtn.setAttribute('aria-label', 'Удалить проект');
-    deleteBtn.textContent = '×';
-    actions.appendChild(deleteBtn);
-  }
-
-  bindRowInputs(row, tr, !!row.project_editable);
-  bindTaskRowReorder(tr, true);
-  tbodyEl.appendChild(tr);
-}
-
-function renderCustomRow(row, index, tbodyEl) {
-  const tr = rowTemplate.content.cloneNode(true).querySelector('tr');
-  tr.dataset.id = row.id;
-  fillRowDragAndNum(tr, index);
-  applyRowStatusClass(tr, row.status || 'new');
-
-  const categorySelect = tr.querySelector('[data-field="category"]');
-  populateCategorySelect(categorySelect, categories, row.category || '');
 
   const statusBadge = tr.querySelector('.status-badge');
   statusBadge.textContent = statusLabel(row.status || 'new');
@@ -274,7 +230,7 @@ function renderCustomRow(row, index, tbodyEl) {
   actions.replaceChildren(makeConvertTypeButton(row));
   if (deleteBtn) actions.appendChild(deleteBtn);
   bindRowInputs(row, tr, true);
-  bindTaskRowReorder(tr, false);
+  bindTaskRowReorder(tr, project);
 }
 
 function render() {
@@ -289,15 +245,15 @@ function render() {
     const tr = document.createElement('tr');
     tr.className = 'task-row--empty';
     const td = document.createElement('td');
-    td.colSpan = 10;
+    td.colSpan = 13;
     td.className = 'task-row--empty-cell';
     td.textContent = 'Проектов пока нет — добавьте кнопкой «+ Задача» (тип «Проектная задача»)';
     tr.appendChild(td);
     projectBody.appendChild(tr);
   } else {
-    currentProjectRows.forEach((row, index) => renderProjectRow(row, index, projectBody));
+    currentProjectRows.forEach((row, index) => renderTaskRow(row, index, projectBody));
   }
-  customRows().forEach((row, index) => renderCustomRow(row, index, tbody));
+  customRows().forEach((row, index) => renderTaskRow(row, index, tbody));
 
   updateTotals();
   updateFillIndicator(progress, fillElements);

@@ -142,32 +142,35 @@
           <h2>Проектные задачи</h2>
         </div>
         <div class="table-wrap">
-          <table class="task-table task-table--project" id="project-table" data-no-resize="true">
+          <table class="task-table" id="project-table">
             <thead>
               <tr>
                 <th class="col-num">#</th>
                 <th class="col-category">Название проекта</th>
                 <th class="col-task">Название задачи</th>
+                <th class="col-final-task">Итоговое наименование</th>
+                <th class="col-status">Статус</th>
                 <th class="col-day" data-day="mon">Пн</th>
                 <th class="col-day" data-day="tue">Вт</th>
                 <th class="col-day" data-day="wed">Ср</th>
                 <th class="col-day" data-day="thu">Чт</th>
                 <th class="col-day" data-day="fri">Пт</th>
                 <th class="col-total">Σ</th>
+                <th class="col-comment">Комментарии</th>
                 <th class="col-actions"></th>
               </tr>
             </thead>
             <tbody id="project-body"></tbody>
             <tfoot>
               <tr>
-                <td colspan="3" class="footer-label">Итого</td>
+                <td colspan="5" class="footer-label">Итого</td>
                 <td class="day-total" data-day="mon">0</td>
                 <td class="day-total" data-day="tue">0</td>
                 <td class="day-total" data-day="wed">0</td>
                 <td class="day-total" data-day="thu">0</td>
                 <td class="day-total" data-day="fri">0</td>
                 <td class="grand-total" id="project-grand-total">0</td>
-                <td></td>
+                <td colspan="2"></td>
               </tr>
             </tfoot>
           </table>
@@ -189,33 +192,6 @@
 
     <p class="empty-hint" id="empty-hint">Выберите ФИО, чтобы открыть таблицу задач</p>
   </div>
-
-  <template id="project-row-template">
-    <tr class="task-row task-row--project">
-      <td class="col-num"></td>
-      <td class="col-category cell-text"></td>
-      <td class="col-task">
-        <span class="project-task-name"></span>
-      </td>
-      <td class="col-day" data-day="mon">
-        <input type="number" class="cell-input cell-input--hours" data-field="mon" min="0" max="24" step="0.5" value="0">
-      </td>
-      <td class="col-day" data-day="tue">
-        <input type="number" class="cell-input cell-input--hours" data-field="tue" min="0" max="24" step="0.5" value="0">
-      </td>
-      <td class="col-day" data-day="wed">
-        <input type="number" class="cell-input cell-input--hours" data-field="wed" min="0" max="24" step="0.5" value="0">
-      </td>
-      <td class="col-day" data-day="thu">
-        <input type="number" class="cell-input cell-input--hours" data-field="thu" min="0" max="24" step="0.5" value="0">
-      </td>
-      <td class="col-day" data-day="fri">
-        <input type="number" class="cell-input cell-input--hours" data-field="fri" min="0" max="24" step="0.5" value="0">
-      </td>
-      <td class="col-total row-total">0</td>
-      <td class="col-actions"></td>
-    </tr>
-  </template>
 
   <template id="row-template">
     <tr class="task-row">
