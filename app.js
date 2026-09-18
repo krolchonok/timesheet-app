@@ -143,7 +143,7 @@ function makeConvertTypeButton(row) {
   btn.dataset.target = toProject ? 'project' : 'admin';
   btn.title = toProject ? 'Сделать проектной' : 'Сделать административной';
   btn.setAttribute('aria-label', btn.title);
-  btn.innerHTML = `<span class="btn-convert-type__arrow" aria-hidden="true">⇄</span><span class="btn-convert-type__label">${toProject ? 'П' : 'А'}</span>`;
+  btn.textContent = toProject ? 'П' : 'А';
   return btn;
 }
 

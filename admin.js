@@ -410,7 +410,7 @@ function renderTaskRowView(row, index, tbody) {
   convertBtn.dataset.target = toProject ? 'project' : 'admin';
   convertBtn.title = toProject ? 'Сделать проектной' : 'Сделать административной';
   convertBtn.setAttribute('aria-label', convertBtn.title);
-  convertBtn.innerHTML = `<span class="btn-convert-type__arrow" aria-hidden="true">⇄</span><span class="btn-convert-type__label">${toProject ? 'П' : 'А'}</span>`;
+  convertBtn.textContent = toProject ? 'П' : 'А';
   convertBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     if (row.is_project && !row.project_editable) {

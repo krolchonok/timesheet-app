@@ -14,6 +14,16 @@ function autoGrowTextarea(el) {
   el.style.height = '0px';
   const next = Math.max(el.scrollHeight, 40);
   el.style.height = `${next}px`;
+  updateRowTallness(el.closest('tr'));
+}
+
+// A row is "tall" once any of its textareas grows past the single-line
+// baseline (40px). Cells switch to top-alignment only then (see
+// .task-row--tall in styles.css), so short rows stay vertically centered.
+function updateRowTallness(tr) {
+  if (!tr) return;
+  const isTall = [...tr.querySelectorAll('textarea.cell-input')].some((t) => t.offsetHeight > 40);
+  tr.classList.toggle('task-row--tall', isTall);
 }
 
 function refreshTextareaHeights(root = document) {

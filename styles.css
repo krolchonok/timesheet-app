@@ -1226,10 +1226,23 @@ body {
 .task-table td {
   border-bottom: 1px solid var(--border-subtle);
   padding: 0;
-  vertical-align: top;
+  vertical-align: middle;
   text-align: center;
   overflow-wrap: break-word;
   min-width: 0;
+}
+
+/* Rows stay centered by default. Once a growing cell (task/category/
+   final-task/comment textarea) pushes the row past one line, switch to
+   top-alignment so the other cells stop re-centering on every keystroke —
+   the # and Σ columns are exempted since they never need that padding. */
+.task-row--tall td {
+  vertical-align: top;
+}
+
+.task-row--tall td.col-num,
+.task-row--tall td.row-total {
+  vertical-align: middle;
 }
 
 .task-table thead th {
@@ -1702,26 +1715,12 @@ textarea.cell-input {
 }
 
 .btn-convert-type {
-  width: auto;
-  min-width: 32px;
-  gap: 3px;
-  padding: 0 8px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--primary);
   background: var(--primary-soft);
   border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
-}
-
-.btn-convert-type__arrow {
-  font-size: 0.85rem;
-  line-height: 1;
-  opacity: 0.75;
-}
-
-.btn-convert-type__label {
-  line-height: 1;
 }
 
 .btn-convert-type:hover {
@@ -1744,7 +1743,7 @@ textarea.cell-input {
   white-space: nowrap;
 }
 
-.task-table td.col-actions {
+.task-row--tall td.col-actions {
   padding-top: 11px;
 }
 
@@ -2087,14 +2086,18 @@ textarea.cell-input {
 
 .final-task-cell {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: 6px;
   padding: 0 6px;
   min-width: 0;
 }
 
-.final-task-cell .btn-transfer {
+.task-row--tall .final-task-cell {
+  align-items: flex-start;
+}
+
+.task-row--tall .final-task-cell .btn-transfer {
   margin-top: 4px;
 }
 
@@ -2109,11 +2112,14 @@ textarea.cell-input {
   min-width: 32px;
 }
 
+.task-row--tall .status-badge {
+  margin-top: 11px;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 11px;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.75rem;
