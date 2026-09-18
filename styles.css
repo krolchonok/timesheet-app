@@ -1650,8 +1650,16 @@ textarea.cell-input {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
-.cell-input--hours {
+/* Percentage heights on a form control placed directly in a <td> are
+   unreliable cross-browser. Give the cell a plain block wrapper (which
+   table cells DO reliably stretch) and let flex stretch the input to
+   fill it instead. */
+.day-cell {
   height: 100%;
+  display: flex;
+}
+
+.cell-input--hours {
   box-sizing: border-box;
   text-align: center;
   padding: 11px 2px;
