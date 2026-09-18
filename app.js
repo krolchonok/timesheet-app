@@ -140,9 +140,10 @@ function makeConvertTypeButton(row) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'btn-icon btn-convert-type';
+  btn.dataset.target = toProject ? 'project' : 'admin';
   btn.title = toProject ? 'Сделать проектной' : 'Сделать административной';
   btn.setAttribute('aria-label', btn.title);
-  btn.textContent = toProject ? 'П' : 'А';
+  btn.innerHTML = `<span class="btn-convert-type__arrow" aria-hidden="true">⇄</span><span class="btn-convert-type__label">${toProject ? 'П' : 'А'}</span>`;
   return btn;
 }
 
