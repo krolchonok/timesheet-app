@@ -144,8 +144,14 @@ function scrollToPerson(person) {
 
     section.classList.remove('user-section--collapsed');
 
-    const panelHeight = panelView.classList.contains('hidden') ? 0 : panelView.offsetHeight;
-    const targetTop = section.getBoundingClientRect().top + window.scrollY - panelHeight - 16;
+    // pinned area = sticky chrome + sticky "Кто заполнил" panel (its CSS top is the chrome height)
+    let pinnedHeight = 0;
+    if (!panelView.classList.contains('hidden')) {
+      const panelStyle = getComputedStyle(panelView);
+      const panelTop = panelStyle.position === 'sticky' ? parseFloat(panelStyle.top) || 0 : 0;
+      pinnedHeight = panelTop + panelView.offsetHeight;
+    }
+    const targetTop = section.getBoundingClientRect().top + window.scrollY - pinnedHeight - 12;
     window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
 
     section.classList.remove('user-section--flash');
