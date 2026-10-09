@@ -950,6 +950,16 @@ document.querySelectorAll('.admin-tabs__btn').forEach((btn) => {
   }
   window.addEventListener('resize', () => refreshTextareaHeights());
 
+  const chrome = document.querySelector('.v2-chrome');
+  if (chrome && typeof ResizeObserver !== 'undefined') {
+    const syncChromeHeight = () => {
+      const sticky = getComputedStyle(chrome).position === 'sticky';
+      document.documentElement.style.setProperty('--v2-chrome-h', sticky ? `${chrome.offsetHeight}px` : '0px');
+    };
+    new ResizeObserver(syncChromeHeight).observe(chrome);
+    window.addEventListener('resize', syncChromeHeight);
+  }
+
   await loadData();
   setAdminMode('view');
 })();

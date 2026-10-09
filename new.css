@@ -360,12 +360,20 @@
 }
 
 .app--v2-admin .completion-panel {
-  position: static;
+  position: sticky;
+  top: var(--v2-chrome-h, 0px);
+  z-index: 25;
+  background: var(--surface);
   margin-bottom: 14px;
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
+}
+
+.app--v2-admin .completion-list {
+  max-height: 32vh;
+  overflow-y: auto;
 }
 
 .app--v2-admin .completion-panel h2 {
